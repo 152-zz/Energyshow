@@ -11,11 +11,13 @@ import matplotlib.pyplot as plt
 import engines.analysis as ana
 import engines.arima as ari
 import engines.xgboost as xgb
+import engines.xgbtree as xgbt
 import engines.Lstm as lstm
 import engines.GRU as gru
 from engines.GRU import RNNModel
 import engines.Randomforest as rf
 import engines.LightGBM as lg
+import engines.lgbtree as lgb
 import os
 import pickle
 # 定义页面标识
@@ -208,7 +210,8 @@ elif page == 'Prediction':
     model_option = st.sidebar.radio('Model Options', ['Linear','Decision Tree','Random Forest','LightGBM','RNN','GRU','LSTM','XGBoost','Arima'])
     default_countries_index = countries.index('United States')
     country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
-    features_trained = country_dict[country_option]
+    #features_trained = country_dict[country_option]
+    features_trained = data.columns[3:]
     feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
     feature_option = feature_revise_map_total[feature_option]
     if model_option == 'Linear':
@@ -234,6 +237,7 @@ elif page == 'Prediction':
             st.write("No Such Model!")
     elif model_option == 'LightGBM':
         st.write('LightGBM Model Result')
+        '''
         plt,pred,years,MSE,R2,MAE = lg.lightgbm_func(data,country_option,feature_option,0)
         st.write("MSE:",MSE)
         st.write("R2:",R2)
@@ -246,6 +250,12 @@ elif page == 'Prediction':
             df[y] = pred[i]
         st.write(df)
         st.pyplot(plt)
+        '''
+        MSE,R2,MAE,res = lgb.run(data,country_option,feature_option,0)
+        st.write("MSE:",MSE)
+        st.write("R2:",R2)
+        st.write("MAE:",MAE)
+        st.write("Prediction of 2015:",res)
     elif model_option == 'RNN':
         st.write("RNN Model Result:")
         fig = gru.RNN_model(country_option,feature_option)
@@ -270,6 +280,7 @@ elif page == 'Prediction':
         st.pyplot(fig)
     elif model_option == 'XGBoost':
         st.write("XGBoost Model Result:")
+        '''
         try:
             plt,pred,years,MSE,R2,MAE = xgb.xgboost_func(data,country_option,feature_option,0)
             st.write("MSE:",MSE)
@@ -285,6 +296,12 @@ elif page == 'Prediction':
             st.pyplot(plt)
         except:
             st.write("No Such Model!")
+         '''
+        MSE,R2,MAE,res = xgbt.run(data,country_option,feature_option,train = 1)
+        st.write("MSE:",MSE)
+        st.write("R2:",R2)
+        st.write("MAE:",MAE)
+        st.write("Prediction of 2015:",res)
     elif model_option == 'Arima':
         st.title("ARIMA")
         # 用户输入

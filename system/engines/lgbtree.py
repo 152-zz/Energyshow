@@ -9,6 +9,7 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import os
 import lightgbm as lgb
+
 folder_path = "./system/engines/model/lgbtree"  
     #train,validation,tes
 def train_test(target_feature,traceback,years,df,target):
@@ -141,13 +142,12 @@ def lgbtree(target_feature,df,target, max_lack = 2 , traceback = [20,15,10,5] , 
         mae,r2,mse,y_test = lgb_model_testing(df,target_feature,target,traceback,years)
     return mae,r2,mse,y_test
  
-def run(data,train = 1,target_feature = 'gas_product'):
+def run(data,country,target_feature = 'gas_product',train = 1):
     traceback = [10,8,6,4,2]
     years = 2
     max_lack = 2
     df,target,dic = data_process(data,target_feature,max_lack)
     mae,r2,mse,y_test = lgbtree(target_feature,df,target,train = train,max_lack = max_lack, traceback = traceback , years = years  ,num_leaves=80,learning_rate=0.1,num_boost=1000)
-    idx = np.where(dic == target_feature)[0][0]
-    return mae,r2,mse,y_test[y_test['country'] == idx]
+    idx = np.where(dic == country)[0][0]
+    return mae,r2,mse,y_test[idx]
 
-run()
