@@ -5,6 +5,7 @@ Created on Tue Jan 23 10:25:46 2024
 """
 
 import streamlit as st
+import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,6 +14,7 @@ import engines.arima as ari
 import engines.xgboost as xgb
 import engines.xgbtree as xgbt
 import engines.Lstm as lstm
+import engines.lstm_cheng as lstmc
 import engines.GRU as gru
 from engines.GRU import RNNModel
 import engines.Randomforest as rf
@@ -21,7 +23,7 @@ import engines.lgbtree as lgb
 import os
 import pickle
 # 定义页面标识
-page = st.sidebar.selectbox('Choose your page', ['Main Page', 'Visualization','Basic Analysis', 'Prediction',"Risk Analysis"])
+page = st.sidebar.selectbox('Choose your page', ['Main Page', 'Dynamic World Map','Dynamic World Map2','Visualization','Basic Analysis', 'Prediction',"Risk Analysis"])
 
 current_dir = os.path.dirname(__file__)
 relative_path = os.path.join(current_dir, 'dataset/data.csv')
@@ -57,6 +59,156 @@ if page == 'Main Page':
     st.write('Content for Main Page')
     image_path = 'system/pictures/mainpage.jpeg'
     st.image(image_path, caption='Oil & Gas', use_column_width=True)
+
+elif page == 'Dynamic World Map':
+   world_current_dir = os.path.dirname(__file__)
+   world_relative_path = os.path.join(world_current_dir, 'dataset/global-data-on-sustainable-energy.csv')
+   df = pd.read_csv(world_relative_path)
+   def plot_world_map_with_slider(df, column_name):
+      fig = go.Figure()
+      for year in range(df['Year'].min(), df['Year'].max() + 1):
+         filtered_df = df[df['Year'] == year]
+         trace = go.Choropleth(
+               locations=filtered_df['Entity'],
+               z=filtered_df[column_name],
+               locationmode='country names',
+               colorscale='Electric',
+               colorbar=dict(title=column_name),
+               zmin=df[column_name].min(),
+               zmax=df[column_name].max(),
+               visible=False
+         )
+         fig.add_trace(trace)
+
+      fig.data[0].visible = True
+      steps = []
+      for i in range(len(fig.data)):
+         step = dict(
+               method='update',
+               args=[{'visible': [False] * len(fig.data)},
+                     {'title_text': f'{column_name} Map - {df["Year"].min() + i}', 'frame': {'duration': 1000, 'redraw': True}}],
+               label=str(df['Year'].min() + i)
+         )
+         step['args'][0]['visible'][i] = True
+         steps.append(step)
+
+      sliders = [dict(
+         active=0,
+         steps=steps,
+         currentvalue={"prefix": "Year: ", "font": {"size": 14}},
+      )]
+
+      fig.update_layout(
+         title_text=f'{column_name} Map with slider',
+         title_font_size=24,
+         title_x=0.5,
+         geo=dict(
+               showframe=True,
+               showcoastlines=True,
+               projection_type='natural earth'
+         ),
+         sliders=sliders,
+         height=500,
+         width=1000,
+         font=dict(family='Arial', size=12),
+         margin=dict(t=80, l=50, r=50, b=50),
+      )
+      return fig
+
+   st.title("Dynamic World Map with Slider")
+
+   # 选择列名称
+   available_columns = df.columns[df.columns.str.contains('%')].tolist()
+   option = st.selectbox(
+      'Select the indicator to display on the map:',
+      available_columns
+   )
+
+   # 显示图形
+   fig = plot_world_map_with_slider(df, option)
+   st.plotly_chart(fig)
+
+elif page == 'Dynamic World Map2':
+   df_new = data
+   def normalize_columns(dataframe, column_names):
+    for column_name in column_names:
+        max_value = dataframe[column_name].max()
+        min_value = dataframe[column_name].min()
+        dataframe[column_name + '_normalized'] = (dataframe[column_name] - min_value) / (max_value - min_value)
+    return dataframe
+
+   # Normalize the new dataset
+   df_new = normalize_columns(df_new, ['oil_value', 'oil_exports'])
+
+   # 动态世界地图函数
+   def plot_world_map_with_slider(df, column_name):
+      normalized_column = column_name + '_normalized'
+      
+      # 获取原始数据的最大值和最小值
+      actual_min = df[column_name].min()
+      actual_max = df[column_name].max()
+
+      fig = go.Figure()
+      for year in range(df['year'].min(), df['year'].max() + 1):
+         filtered_df = df[df['year'] == year]
+         trace = go.Choropleth(
+               locations=filtered_df['country'],
+               z=filtered_df[normalized_column],
+               locationmode='country names',
+               colorscale='Viridis',
+               colorbar=dict(
+                  title=column_name,
+                  tickvals=[0, 0.25, 0.5, 0.75, 1],  # 归一化的刻度值
+                  ticktext=[f'{actual_min:.2f}', f'{(actual_max - actual_min) * 0.25 + actual_min:.2f}',
+                           f'{(actual_max - actual_min) * 0.5 + actual_min:.2f}',
+                           f'{(actual_max - actual_min) * 0.75 + actual_min:.2f}', f'{actual_max:.2f}']  # 对应的实际数值文本
+               ),
+               zmin=0,
+               zmax=1,
+               visible=False
+         )
+         fig.add_trace(trace)
+      
+      fig.data[0].visible = True
+      steps = []
+      for i in range(len(fig.data)):
+         step = dict(
+               method='update',
+               args=[{'visible': [False] * len(fig.data)},
+                     {'title_text': f'{column_name} Map - {df["year"].min() + i}', 'frame': {'duration': 1000, 'redraw': True}}],
+               label=str(df['year'].min() + i)
+         )
+         step['args'][0]['visible'][i] = True
+         steps.append(step)
+
+      sliders = [dict(
+         active=0,
+         steps=steps,
+         currentvalue={"prefix": "Year: ", "font": {"size": 14}},
+      )]
+
+      fig.update_layout(
+         title_text=f'{column_name} Map with slider',
+         title_font_size=24,
+         title_x=0.5,
+         geo=dict(
+               showframe=True,
+               showcoastlines=True,
+               projection_type='natural earth'
+         ),
+         sliders=sliders,
+         height=500,
+         width=1000,
+         font=dict(family='Arial', size=12),
+         margin=dict(t=80, l=50, r=50, b=50),
+      )
+      return fig
+   st.header("新增数据集可视化")
+   # 假设归一化后的列名已经在数据框中
+   available_columns = [col for col in df_new.columns if '_normalized' in col]
+   option = st.selectbox('Select the indicator to display on the map:', available_columns)
+   # 从归一化的列名中移除 '_normalized' 后缀以匹配原始列名
+   st.plotly_chart(plot_world_map_with_slider(df_new, option.replace('_normalized', '')), use_container_width=True)
 
 elif page == 'Visualization':
     # Logo and Navigation
@@ -266,6 +418,7 @@ elif page == 'Prediction':
         st.pyplot(fig)
     elif model_option == 'LSTM':
         st.write("LSTM Model Result:")
+        '''
         fig,pred,years,MSE,R2,MAE = lstm.predict(data,country_option,feature_option,0)
         st.write("MSE:",MSE)
         st.write("R2:",R2)
@@ -277,7 +430,18 @@ elif page == 'Prediction':
             y = y[:4]
             df[y] = pred[i]
         st.write(df)
+         '''
+        fig,train_metrics,test_metrics = lstmc.load_lstm(data,country_option,feature_option,1980,2013)
+        st.write("Train Metrics:")
+        st.write("R2:",train_metrics[0])
+        st.write("MSE:",train_metrics[1])
+        st.write("MAE:",train_metrics[2])
+        st.write("Test Metrics:")
+        st.write("R2:",test_metrics[0])
+        st.write("MSE:",test_metrics[1])
+        st.write("MAE:",test_metrics[2])
         st.pyplot(fig)
+        
     elif model_option == 'XGBoost':
         st.write("XGBoost Model Result:")
         '''
@@ -297,7 +461,7 @@ elif page == 'Prediction':
         except:
             st.write("No Such Model!")
          '''
-        MSE,R2,MAE,res = xgbt.run(data,country_option,feature_option,train = 1)
+        MSE,R2,MAE,res = xgbt.run(data,country_option,feature_option,train = 0)
         st.write("MSE:",MSE)
         st.write("R2:",R2)
         st.write("MAE:",MAE)
