@@ -71,7 +71,6 @@ def lgb_model_training(df,target_feature,target,traceback,years,num_leaves,learn
     print(np.mean(r2))
     print(np.mean(mse))
 
-    folder_path = ".\LGBT"
     model_file ='lgb'+'-'+target_feature+'.txt'
     model_path = os.path.join(folder_path, model_file)
     lgb_reg.save_model(model_path)
@@ -79,7 +78,6 @@ def lgb_model_training(df,target_feature,target,traceback,years,num_leaves,learn
 
 def lgb_model_testing(df,target_feature,target,traceback,years):
     #load data
-    folder_path = ".\LGBT"
     model_file ='lgb'+'-'+target_feature+'.txt'
     model_path = os.path.join(folder_path, model_file)
     model = lgb.Booster(model_file=model_path)
