@@ -19,7 +19,8 @@ import engines.lgbtree as lgb
 import os
 import pickle
 # 定义页面标识
-page = st.sidebar.selectbox('Choose your page', ['Main Page', 'Dynamic World Map','Dynamic World Map2','Visualization','Basic Analysis', 'Prediction',"Risk Analysis"])
+page = st.sidebar.selectbox('Choose your page', ['Main Page', 'Dynamic World Map',
+'Visualization','Basic Analysis', 'Prediction',"Risk Analysis","Reference"])
 
 current_dir = os.path.dirname(__file__)
 relative_path = os.path.join(current_dir, 'dataset/data.csv')
@@ -49,82 +50,19 @@ if page == 'Main Page':
     col1, col2, col3 = st.columns((1, 4, 1))
     with col2:
         st.markdown("# ENERGY PLATFORM")
-    with col3:
-        st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
     st.sidebar.write('Sidebar for Main Page')
-    st.write('Content for Main Page')
+    st.write('Introduction for Energy Platform:')
+    st.write('---------------------------------------------------')
     image_path = 'system/pictures/mainpage.jpeg'
     st.image(image_path, caption='Oil & Gas', use_column_width=True)
 
+elif page == 'Reference':
+   col1, col2, col3 = st.columns((1, 4, 1))
+   with col2:
+      st.markdown("# ENERGY PLATFORM")
+      st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
+
 elif page == 'Dynamic World Map':
-   world_current_dir = os.path.dirname(__file__)
-   world_relative_path = os.path.join(world_current_dir, 'dataset/global-data-on-sustainable-energy.csv')
-   df = pd.read_csv(world_relative_path)
-   def plot_world_map_with_slider(df, column_name):
-      fig = go.Figure()
-      for year in range(df['Year'].min(), df['Year'].max() + 1):
-         filtered_df = df[df['Year'] == year]
-         trace = go.Choropleth(
-               locations=filtered_df['Entity'],
-               z=filtered_df[column_name],
-               locationmode='country names',
-               colorscale='Electric',
-               colorbar=dict(title=column_name),
-               zmin=df[column_name].min(),
-               zmax=df[column_name].max(),
-               visible=False
-         )
-         fig.add_trace(trace)
-
-      fig.data[0].visible = True
-      steps = []
-      for i in range(len(fig.data)):
-         step = dict(
-               method='update',
-               args=[{'visible': [False] * len(fig.data)},
-                     {'title_text': f'{column_name} Map - {df["Year"].min() + i}', 'frame': {'duration': 1000, 'redraw': True}}],
-               label=str(df['Year'].min() + i)
-         )
-         step['args'][0]['visible'][i] = True
-         steps.append(step)
-
-      sliders = [dict(
-         active=0,
-         steps=steps,
-         currentvalue={"prefix": "Year: ", "font": {"size": 14}},
-      )]
-
-      fig.update_layout(
-         title_text=f'{column_name} Map with slider',
-         title_font_size=24,
-         title_x=0.5,
-         geo=dict(
-               showframe=True,
-               showcoastlines=True,
-               projection_type='natural earth'
-         ),
-         sliders=sliders,
-         height=500,
-         width=1000,
-         font=dict(family='Arial', size=12),
-         margin=dict(t=80, l=50, r=50, b=50),
-      )
-      return fig
-
-   st.title("Dynamic World Map with Slider")
-
-   # 选择列名称
-   available_columns = df.columns[df.columns.str.contains('%')].tolist()
-   option = st.selectbox(
-      'Select the indicator to display on the map:',
-      available_columns
-   )
-
-   # 显示图形
-   fig = plot_world_map_with_slider(df, option)
-   st.plotly_chart(fig)
-
-elif page == 'Dynamic World Map2':
    df_new = data
    def normalize_columns(dataframe, column_names):
     for column_name in column_names:
@@ -199,75 +137,72 @@ elif page == 'Dynamic World Map2':
          margin=dict(t=80, l=50, r=50, b=50),
       )
       return fig
-   st.header("新增数据集可视化")
+   st.header("Dynamic World Map")
    # 假设归一化后的列名已经在数据框中
+   st.write('Introduction for Dynamic World Map:')
+   st.write('---------------------------------------------------')
    available_columns = [col for col in df_new.columns if '_normalized' in col]
    option = st.selectbox('Select the indicator to display on the map:', available_columns)
    # 从归一化的列名中移除 '_normalized' 后缀以匹配原始列名
    st.plotly_chart(plot_world_map_with_slider(df_new, option.replace('_normalized', '')), use_container_width=True)
 
 elif page == 'Visualization':
-    # Logo and Navigation
-    col1, col2, col3 = st.columns((1, 4, 1))
-    with col2:
-        st.markdown("# Visualization")
-    with col3:
-        st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
-    st.sidebar.write('Sidebar for Visualization')
-    energy_option = st.sidebar.radio('1.Energy Options', ['Oil', 'Gas'])
-    
-    if energy_option == 'Oil':
-        feature_map = feature_map_oil
-        features = oil_features
-        feature_revise_map = feature_revise_map_oil
-    elif energy_option == 'Gas':
-        feature_map = feature_map_gas
-        features = gas_features
-        feature_revise_map = feature_revise_map_gas
-        
-    cities = data["country"].unique().tolist()
-    
-    min_year, max_year = int(data['year'].min()), int(data['year'].max())
-    start_year = st.slider("Choose start year", min_year, max_year, min_year)
-    end_year = st.slider("Choose end year", min_year, max_year, max_year)
-    if end_year < start_year:
-            st.error("The end year must later than the start year!")
-    else:
-        patterns = ['Mutiple countries with one feature','Mutiple features in one country']
-        pattern_option = st.selectbox('Please select a pattern',patterns)
-        
-        if pattern_option == 'Mutiple countries with one feature':
-            cities_option = st.multiselect('Please select one or more countries',cities)
-            feature_option = st.selectbox('Please select one feature',[feature_map[col] for col in data.columns if col in features])
-            feature_option = feature_revise_map[feature_option]
-            lines, = ana.trend(data,cities_option,feature_option,int(start_year),int(end_year))
-            if cities_option:
-                df = pd.DataFrame(
-                        np.array([line['y'] for line in lines]).T,
-                        columns = cities_option,
-                        index = lines[0]['x'] )
-                st.title(feature_map[feature_option]+ ' of Different Countries')   
-                st.line_chart(df)
-                
-        elif pattern_option == 'Mutiple features in one country':
-            city_option = st.selectbox('Please select one country',cities)
-            features_option = st.multiselect('Please select one or more features',[feature_map[col] for col in data.columns if col in features])
-            feature_option = [feature_revise_map[feature] for feature in features_option]
-            lines, = ana.corr_features_cities(data,city_option,feature_option,int(start_year),int(end_year))
-            if features_option:
-                df = pd.DataFrame(
-                        np.array([line['y'] for line in lines]).T,
-                        columns = features_option,
-                        index = lines[0]['x'] )
-                st.title('Different Features of '+ city_option)   
-                st.line_chart(df)
+   col1, col2, col3 = st.columns((1, 4, 1))
+   with col2:
+      st.markdown("# Visualization")
+   st.sidebar.write('Sidebar for Visualization')
+   energy_option = st.sidebar.radio('Energy Options', ['Oil', 'Gas'])
+   
+   if energy_option == 'Oil':
+      feature_map = feature_map_oil
+      features = oil_features
+      feature_revise_map = feature_revise_map_oil
+   elif energy_option == 'Gas':
+      feature_map = feature_map_gas
+      features = gas_features
+      feature_revise_map = feature_revise_map_gas
+      
+   cities = data["country"].unique().tolist()
+   
+   min_year, max_year = int(data['year'].min()), int(data['year'].max())
+   start_year = st.slider("Choose start year", min_year, max_year, min_year)
+   end_year = st.slider("Choose end year", min_year, max_year, max_year)
+   if end_year < start_year:
+         st.error("The end year must later than the start year!")
+   else:
+      patterns = ['Mutiple countries with one feature','Mutiple features in one country']
+      pattern_option = st.selectbox('Please select a pattern',patterns)
+      
+      if pattern_option == 'Mutiple countries with one feature':
+         cities_option = st.multiselect('Please select one or more countries',cities)
+         feature_option = st.selectbox('Please select one feature',[feature_map[col] for col in data.columns if col in features])
+         feature_option = feature_revise_map[feature_option]
+         lines, = ana.trend(data,cities_option,feature_option,int(start_year),int(end_year))
+         if cities_option:
+               df = pd.DataFrame(
+                     np.array([line['y'] for line in lines]).T,
+                     columns = cities_option,
+                     index = lines[0]['x'] )
+               st.title(feature_map[feature_option]+ ' of Different Countries')   
+               st.line_chart(df)
+               
+      elif pattern_option == 'Mutiple features in one country':
+         city_option = st.selectbox('Please select one country',cities)
+         features_option = st.multiselect('Please select one or more features',[feature_map[col] for col in data.columns if col in features])
+         feature_option = [feature_revise_map[feature] for feature in features_option]
+         lines, = ana.corr_features_cities(data,city_option,feature_option,int(start_year),int(end_year))
+         if features_option:
+               df = pd.DataFrame(
+                     np.array([line['y'] for line in lines]).T,
+                     columns = features_option,
+                     index = lines[0]['x'] )
+               st.title('Different Features of '+ city_option)   
+               st.line_chart(df)
 
 elif page == 'Basic Analysis':
     col1, col2, col3 = st.columns((1, 4, 1))
     with col2:
         st.markdown("# DATA ANLYSIS")
-    with col3:
-        st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
     st.sidebar.write('Sidebar for Analysis')
     
     # 添加用于选择是否检测和剔除outliers的选项
@@ -346,54 +281,53 @@ elif page == 'Basic Analysis':
                 st.pyplot(fig)
 
 elif page == 'Prediction':
-    # Logo and Navigation
-    col1, col2, col3 = st.columns((1, 4, 1))
-    with col2:
-        st.markdown("# Prediction")
-    with col3:
-        st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
-    countries = list(data['country'].unique())
-    model_option = st.sidebar.radio('Model Options', ['LightGBM','LSTM','XGBoost','Arima'])
-    if model_option == 'LightGBM':
+   col1, col2, col3 = st.columns((1, 4, 1))
+   with col2:
+      st.markdown("# Prediction")
+   countries = list(data['country'].unique())
+   model_option = st.sidebar.radio('Model Options', ['LSTM','LightGBM','XGBoost','Arima'])
+   if model_option == 'LightGBM':
       default_countries_index = countries.index('United States')
       country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       features_trained = data.columns[3:]
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
       feature_option = feature_revise_map_total[feature_option]
       st.write('LightGBM Model Result')
-      MSE,R2,MAE,res = lgb.run(data,country_option,feature_option,0)
-      st.write("MSE:",MSE)
-      st.write("R2:",R2)
-      st.write("MAE:",MAE)
-      st.write("Prediction of 2015:",res)
-    elif model_option == 'LSTM':
-         with open('./system/engines/model/Lstm_cheng/LSTM_240427/id_set.pkl', 'rb') as file:
-            country_id_set = pickle.load(file)
-         country_set = []
-         for c in country_id_set:
-            country_set.append(data[data['id'] == c]['country'].values[0])
-         default_countries_index = countries.index('United States')
-         country_option = st.selectbox('Please select one country',country_set)
-         features_trained = data.columns[3:]
-         feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
-         feature_option = feature_revise_map_total[feature_option]
+      MSE,R2,MAE,res,figure = lgb.run(data,country_option,feature_option,0)
+      table_dict = dict()
+      table_dict["Metrics"] = ["R2","MSE","MAE"]
+      table_dict["Test_Metrics"] = [R2,MSE,MAE]
+      table = pd.DataFrame(table_dict)
+      table.set_index("Metrics",inplace = True)
+      st.dataframe(table)
+      st.pyplot(figure)
 
-         st.write("LSTM Model Result:")
-         country_id = data[data['country'] == country_option]['id'].values[0]
-         print(country_id)
-         data_cheng = pd.read_csv("./system/dataset/data_Cheng.csv")
-         fig,train_metrics,test_metrics = lstmc.load_lstm(data_cheng,1980,2013)
-         #st.write("Train Metrics:")
-         #st.write("R2:",train_metrics[country_id][0])
-         #st.write("MSE:",train_metrics[country_id][1])
-         #st.write("MAE:",train_metrics[country_id][2])
-         st.write("Test Metrics:")
-         st.write("R2:",test_metrics[country_id][0])
-         st.write("MSE:",test_metrics[country_id][1])
-         st.write("MAE:",test_metrics[country_id][2])
-         st.pyplot(fig[country_id])
+   elif model_option == 'LSTM':
+      with open('./system/engines/model/Lstm_cheng/LSTM_240427/id_set.pkl', 'rb') as file:
+         country_id_set = pickle.load(file)
+      country_set = []
+      for c in country_id_set:
+         country_set.append(data[data['id'] == c]['country'].values[0])
+      default_countries_index = countries.index('United States')
+      country_option = st.selectbox('Please select one country',country_set)
+      features_trained = data.columns[3:]
+      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
+      feature_option = feature_revise_map_total[feature_option]
+      st.write("LSTM Model Result:")
+      country_id = data[data['country'] == country_option]['id'].values[0]
+      print(country_id)
+      data_cheng = pd.read_csv("./system/dataset/data_Cheng.csv")
+      fig,train_metrics,test_metrics = lstmc.load_lstm(data_cheng,1980,2013)
+      table_dict = dict()
+      table_dict["Metrics"] = ["R2","MSE","MAE"]
+      table_dict["Train_Metrics"] = train_metrics[country_id]
+      table_dict["Test_Metrics"] = test_metrics[country_id]
+      table = pd.DataFrame(table_dict)
+      table.set_index("Metrics",inplace = True)
+      st.dataframe(table)
+      st.pyplot(fig[country_id])
         
-    elif model_option == 'XGBoost':
+   elif model_option == 'XGBoost':
       default_countries_index = countries.index('United States')
       country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       features_trained = data.columns[3:]
@@ -401,35 +335,35 @@ elif page == 'Prediction':
       feature_option = feature_revise_map_total[feature_option]
       st.write("XGBoost Model Result:")
       MSE,R2,MAE,res,figure = xgbt.run(data,country_option,feature_option,train = 0)
-      st.write("MSE:",MSE)
-      st.write("R2:",R2)
-      st.write("MAE:",MAE)
-      st.write("Prediction of 2015:",res)
+      table_dict = dict()
+      table_dict["Metrics"] = ["R2","MSE","MAE"]
+      table_dict["Test_Metrics"] = [R2,MSE,MAE]
+      table = pd.DataFrame(table_dict)
+      table.set_index("Metrics",inplace = True)
+      st.dataframe(table)
       st.pyplot(figure)
-    elif model_option == 'Arima':
-        st.title("ARIMA")
-        # 用户输入
-        cities_option = st.selectbox("Please select one or more countries", data['country'].unique(), key="cities")
 
-        # 确保年份选择逻辑正确
-        min_year, max_year = int(data['year'].min()), int(data['year'].max())
-        start_year = st.slider("Choose start year", min_year, max_year, min_year)
-        end_year = st.slider("Choose end year", min_year, max_year, max_year)
-
-        # 确保用户不能选择结束年份小于开始年份
-        if end_year < start_year:
-            st.error("The end year must later than the start year!")
-        else:
-            feature_option = st.selectbox("Choose one or more features", [col for col in data.columns if col not in ['country', 'year',"id"]],key="feature_names")
-
-        # 如果用户已经做出选择，则显示图表
-        if cities_option and feature_option:
-            figs,result =ari.pred_arima(data, cities_option, feature_option, start_year, end_year)
-            st.pyplot(figs[0])
-            st.pyplot(figs[1])
-            st.pyplot(figs[2])
-            st.pyplot(figs[3])
-            st.write(result)
+   elif model_option == 'Arima':
+      st.title("ARIMA")
+      # 用户输入
+      cities_option = st.selectbox("Please select one or more countries", data['country'].unique(), key="cities")
+      # 确保年份选择逻辑正确
+      min_year, max_year = int(data['year'].min()), int(data['year'].max())
+      start_year = st.slider("Choose start year", min_year, max_year, min_year)
+      end_year = st.slider("Choose end year", min_year, max_year, max_year)
+      # 确保用户不能选择结束年份小于开始年份
+      if end_year < start_year:
+         st.error("The end year must later than the start year!")
+      else:
+         feature_option = st.selectbox("Choose one or more features", [col for col in data.columns if col not in ['country', 'year',"id"]],key="feature_names")
+      # 如果用户已经做出选择，则显示图表
+      if cities_option and feature_option:
+         figs,result =ari.pred_arima(data, cities_option, feature_option, start_year, end_year)
+         st.pyplot(figs[0])
+         st.pyplot(figs[1])
+         st.pyplot(figs[2])
+         st.pyplot(figs[3])
+         st.write(result)
 
 
 elif page == 'Risk Analysis':
@@ -437,8 +371,6 @@ elif page == 'Risk Analysis':
     col1,col2, col3 = st.columns((0.1,4,1))
     with col2:
         st.markdown("# Risk Transmission Analysis")
-    with col3:
-        st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
     analysis_option = st.sidebar.radio('Analytical Perspectives', ['Global','National'])
 
     if analysis_option == 'Global':

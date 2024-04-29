@@ -101,6 +101,27 @@ def lgb_model_testing(df,target_feature,target,traceback,years):
     y_test = model.predict(X_test)
     return mae,r2,mse,y_test
 
+def plot_figure(df,target_feature,target,Years):
+    model_file ='lgb'+'-'+target_feature+'.txt'
+    model_path = os.path.join(folder_path, model_file)
+    model = lgb.Booster(model_file=model_path)
+    y_preds = []
+    for i in range(len(df)):
+        x_pred = df.iloc[i].values.reshape(1,14)
+        y_pred = model.predict(x_pred)
+        y_preds.append(y_pred)
+    print(len(y_preds))
+    print(target.shape)
+
+    plt.plot(Years[1:],y_preds[:-1],label = 'y_pred')
+    plt.plot(Years[1:],target[1:],label = 'y_real')
+    plt.xlabel('year')
+    plt.ylabel('target value')
+    plt.title("Prediction of Feature")
+    plt.legend()
+    plt.show()
+    return plt
+
 def data_process(data,target_feature,max_lack):
     #load the data
     df = data
@@ -149,5 +170,9 @@ def run(data,country,target_feature = 'gas_product',train = 1):
     df,target,dic = data_process(data,target_feature,max_lack)
     mae,r2,mse,y_test = lgbtree(target_feature,df,target,train = train,max_lack = max_lack, traceback = traceback , years = years  ,num_leaves=80,learning_rate=0.1,num_boost=1000)
     idx = np.where(dic == country)[0][0]
-    return mae,r2,mse,y_test[idx]
+    Years = df[df['country'] == idx]
+    df.reset_index()
+    Years = Years.index
+    figure = plot_figure(df[df['country'] == idx],target_feature,target[df['country'] == idx],Years)
+    return mae,r2,mse,y_test[idx],figure
 
