@@ -417,55 +417,37 @@ elif page == 'Prediction':
         fig = gru.GRU_model(country_option,feature_option)
         st.pyplot(fig)
     elif model_option == 'LSTM':
-        st.write("LSTM Model Result:")
-        '''
-        fig,pred,years,MSE,R2,MAE = lstm.predict(data,country_option,feature_option,0)
-        st.write("MSE:",MSE)
-        st.write("R2:",R2)
-        st.write("MAE:",MAE)
-        data = {}               
-        df = pd.DataFrame(data)
-        for i in range(len(years) - 5,len(years)):
-            y = years[i].strftime("%Y-%m-%d")
-            y = y[:4]
-            df[y] = pred[i]
-        st.write(df)
+         st.write("LSTM Model Result:")
+         country_id = data[data['country'] == country_option]['id'].values[0]
+         print(country_id)
+        #fig,train_metrics,test_metrics = lstmc.load_lstm(data,1980,2013)
+         with open('./system/fig_dict.pickle', 'rb') as file:
+            fig_dict = pickle.load(file)
+         with open('./system/train_metric_dict.pickle', 'rb') as file:
+            train_metric_dict = pickle.load(file)
+         with open('./system/test_metric_dict.pickle', 'rb') as file:
+            test_metric_dict = pickle.load(file)
+            '''
+         st.write("Train Metrics:")
+         st.write("R2:",train_metrics[0])
+         st.write("MSE:",train_metrics[1])
+         st.write("MAE:",train_metrics[2])
+         st.write("Test Metrics:")
+         st.write("R2:",test_metrics[0])
+         st.write("MSE:",test_metrics[1])
+         st.write("MAE:",test_metrics[2])
          '''
-        fig,train_metrics,test_metrics = lstmc.load_lstm(data,country_option,feature_option,1980,2013)
-        st.write("Train Metrics:")
-        st.write("R2:",train_metrics[0])
-        st.write("MSE:",train_metrics[1])
-        st.write("MAE:",train_metrics[2])
-        st.write("Test Metrics:")
-        st.write("R2:",test_metrics[0])
-        st.write("MSE:",test_metrics[1])
-        st.write("MAE:",test_metrics[2])
-        st.pyplot(fig)
+         #st.pyplot(fig.dict[country_id])
         
     elif model_option == 'XGBoost':
         st.write("XGBoost Model Result:")
-        '''
-        try:
-            plt,pred,years,MSE,R2,MAE = xgb.xgboost_func(data,country_option,feature_option,0)
-            st.write("MSE:",MSE)
-            st.write("R2:",R2)
-            st.write("MAE:",MAE)
-            data = {}
-            df = pd.DataFrame(data)
-            for i in range(len(years) - 5,len(years)):
-                y = years[i].strftime("%Y-%m-%d")
-                y = y[:4]
-                df[y] = pred[i]
-            st.write(df)
-            st.pyplot(plt)
-        except:
-            st.write("No Such Model!")
-         '''
-        MSE,R2,MAE,res = xgbt.run(data,country_option,feature_option,train = 0)
+
+        MSE,R2,MAE,res,figure = xgbt.run(data,country_option,feature_option,train = 0)
         st.write("MSE:",MSE)
         st.write("R2:",R2)
         st.write("MAE:",MAE)
         st.write("Prediction of 2015:",res)
+        st.pyplot(figure)
     elif model_option == 'Arima':
         st.title("ARIMA")
         # 用户输入
