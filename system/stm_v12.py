@@ -285,7 +285,7 @@ elif page == 'Prediction':
    with col2:
       st.markdown("# Prediction")
    countries = list(data['country'].unique())
-   model_option = st.sidebar.radio('Model Options', ['LSTM','LightGBM','XGBoost','Arima'])
+   model_option = st.sidebar.radio('Model Options', ['LSTM-Single Feature','LSTM-Multi Features','LightGBM','XGBoost','Arima'])
    if model_option == 'LightGBM':
       default_countries_index = countries.index('United States')
       country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
@@ -293,7 +293,7 @@ elif page == 'Prediction':
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
       feature_option = feature_revise_map_total[feature_option]
       st.write('LightGBM Model Result')
-      MSE,R2,MAE,res,figure = lgb.run(data,country_option,feature_option,0)
+      R2,MSE,MAE,res,figure = lgb.run(data,country_option,feature_option,0)
       table_dict = dict()
       table_dict["Metrics"] = ["R2","MSE","MAE"]
       table_dict["Test_Metrics"] = [R2,MSE,MAE]
@@ -302,7 +302,7 @@ elif page == 'Prediction':
       st.dataframe(table)
       st.pyplot(figure)
 
-   elif model_option == 'LSTM':
+   elif model_option == 'LSTM-Single Feature':
       with open('./system/engines/model/Lstm_cheng/LSTM_240427/id_set.pkl', 'rb') as file:
          country_id_set = pickle.load(file)
       country_set = []
@@ -326,7 +326,23 @@ elif page == 'Prediction':
       table.set_index("Metrics",inplace = True)
       st.dataframe(table)
       st.pyplot(fig[country_id])
-        
+
+   elif model_option == 'LSTM-Multi Features':
+      default_countries_index = countries.index('United States')
+      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
+      features_return = ['oil_exports','oil_pro_person','oil_val_person','gas_exports',
+                           'gas_price','gas_product','gas_val_person','population']
+      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_return])
+      feature_option = feature_revise_map_total[feature_option]
+      R2,MSE,MAE,y_pred = lstm.train_model(data = data,target=feature_option,CTY = country_option)
+      print(R2,MSE,MAE)
+      table_dict = dict()
+      table_dict["Metrics"] = ["R2","MSE","MAE"]
+      table_dict["Test_Metrics"] = [R2,MSE,MAE]
+      table = pd.DataFrame(table_dict)
+      table.set_index("Metrics",inplace = True)
+      st.dataframe(table)
+
    elif model_option == 'XGBoost':
       default_countries_index = countries.index('United States')
       country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
@@ -334,7 +350,7 @@ elif page == 'Prediction':
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
       feature_option = feature_revise_map_total[feature_option]
       st.write("XGBoost Model Result:")
-      MSE,R2,MAE,res,figure = xgbt.run(data,country_option,feature_option,train = 0)
+      R2,MSE,MAE,res,figure = xgbt.run(data,country_option,feature_option,train = 0)
       table_dict = dict()
       table_dict["Metrics"] = ["R2","MSE","MAE"]
       table_dict["Test_Metrics"] = [R2,MSE,MAE]

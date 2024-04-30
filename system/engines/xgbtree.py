@@ -166,4 +166,4 @@ def run(data,country,target_feature = 'gas_product',train = 1):
     df.reset_index()
     Years = Years.index
     figure = plot_figure(df[df['country'] == idx],target_feature,target[df['country'] == idx],Years)
-    return mae,r2,mse,y_test[idx],figure
+    return r2,mse,mae,y_test[idx],figure

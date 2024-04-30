@@ -1,201 +1,198 @@
-import inspect
+import pandas as pd
+import numpy as np
+#from xgboost import XGBRegressor as XGBR
+#import xgboost
+from time import time
+import datetime
 import os
 import torch
 import torch.nn as nn
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-#import packages
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+import torch.optim as optim
+import torch.nn.init as init
+from torch.utils.data import TensorDataset, DataLoader
 
-folder_path = "./system/engines/model/Lstm"  
-#data cleaning functions
-def processing_data(train_data):
-    for column in list(train_data.columns[train_data.isnull().sum()>0]):
-        mean=train_data[column].mean()
-        median=train_data[column].median()
-        sigma=train_data[column].std()
-        train_data[column].fillna(median,inplace=True)
-        feature_celling=mean+3*sigma
-        feature_floor=mean-3*sigma
-        train_data[column]=np.clip(train_data[column],feature_floor,feature_celling)
-    return train_data
+class myLSTM(nn.Module):
+    def __init__(self,input_size, hidden_size, num_layers, output_size):
+        super(myLSTM, self).__init__()
+        #self.ln = nn.LayerNorm([20,input_size])
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
 
+        for name, param in self.named_parameters():
+            if 'weight' in name:
+                init.xavier_uniform_(param.data)
+            elif 'bias' in name:
+                param.data.fill_(0.0)
 
-def create_inout_sequences(input_data, tw):
-    inout_seq = []
-    L = len(input_data)
-    for i in range(L-tw):
-        train_seq = input_data[i:i+tw]
-        train_label = input_data[i+tw:i+tw+1]
-        inout_seq.append((train_seq ,train_label))
-    return inout_seq
+    def forward(self, x):
+        #x = self.ln(x)
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.lstm(x, (h0, c0))
+        out = self.fc(out[:,-1,:])  # 只取最后一个时间步的输出
+        return out
 
-
-class LSTM(nn.Module):
-    def __init__(self, input_size=1, hidden_layer_size=50, output_size=1):
-        super().__init__()
-        self.hidden_layer_size = hidden_layer_size
-        self.lstm = nn.LSTM(input_size, hidden_layer_size)
-        self.linear = nn.Linear(in_features =hidden_layer_size ,out_features = output_size)
-        self.hidden_cell = (torch.zeros(1, 1, self.hidden_layer_size),
-                             torch.zeros(1, 1,self.hidden_layer_size))
-
-    def forward(self, input_seq):
-        lstm_out, self.hidden_cell = self.lstm(input_seq.view(len(input_seq), 1, -1), self.hidden_cell)
-        predictions = self.linear(lstm_out.view(len(input_seq), -1))
-        return predictions[-1]
-
-def LSTM_model_training(data,learning_rate,city,target,tw=12,predicttime=12):
-    print(len(data))
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    processed_train_data = scaler.fit_transform(data.reshape(-1, 1))
-    train_data_normalized = torch.FloatTensor(processed_train_data).view(-1)
-    #train_data_normalized = processed_train_data
-    #[a1 a2 a3 a4 a5]->[a6]
+def datapre(data,n_timestamp=3,target = 'oil_price',time_threshold = 2011):
+    columns_length = data.shape[1]
+    data.drop('id', axis=1, inplace=True)
+    # transform the country name to the int
+    int_encoded = pd.factorize(data['country'])   
+    data['country'] = int_encoded[0]
+    country_to_number = dict(zip(int_encoded[1], int_encoded[0]))
     
-    train_window = tw
-    train_inout_seq = create_inout_sequences(train_data_normalized, train_window)
+    df = data[data['year'] <= time_threshold]
+    df = df[df['year'] >= 1970]
+    #data processing:
+    def gettingid(data,country):
+        data_id = data[data['country'] == country]
+        return data_id
+    X = []
+    y = []
+    def data_split(sequence, n_timestamp,X,y):
+        ix = sequence.values
+        iy =  sequence.loc[:,target].values
+        for i in range(len(sequence)):
+            end_ix = i + n_timestamp
+            if end_ix > len(sequence)-1:
+                break
+            seq_x, seq_y = ix[i:end_ix], [iy[end_ix]]
+            X.append(seq_x)
+            y.append(seq_y)
+        return X,y
+    for i in set(df['country'].values):
+        d = gettingid(df,i)
+        X,y = data_split(d, n_timestamp,X,y)
+    X_train, y_train = np.array(X),np.array(y)
+    X_train = torch.from_numpy(X_train).float()
+    #X_total = torch.where(torch.isnan(X_total), torch.tensor(0), X_total)
+    y_train = torch.from_numpy(y_train).float()
+    print(X_train.shape)
+    print(y_train.shape)
     
-    model = LSTM()
-    model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size),
-                    torch.zeros(1, 1, model.hidden_layer_size))
-    loss_function = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-      
-    epochs = 80
-    for i in range(epochs):
-        for seq, labels in train_inout_seq:
-            optimizer.zero_grad()
-            model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size),
-                            torch.zeros(1, 1, model.hidden_layer_size))
-            y_pred = model(seq)
+#test data
+    df = data[data['year'] > time_threshold-n_timestamp]
+    #data processing:
+    X = []
+    y = []
+    for i in set(df['country'].values):
+        d = gettingid(df,i)
+        X,y = data_split(d, n_timestamp,X,y)
+    X_test, y_test = np.array(X),np.array(y)
+    X_test = torch.from_numpy(X_test).float()
+    #X_total = torch.where(torch.isnan(X_total), torch.tensor(0), X_total)
+    y_test = torch.from_numpy(y_test).float()    
     
-            single_loss = loss_function(y_pred, labels)
-            single_loss.backward()
-            optimizer.step()
+    def rn(tensorx,tensory):
+        mask = torch.isnan(tensorx).any(dim=(1, 2))
+        tensorx = tensorx[~mask]
+        tensory = tensory[~mask]
+        mask = torch.isnan(tensory).any(dim=(1))
+        tensorx = tensorx[~mask]
+        tensory = tensory[~mask]
+        return tensorx,tensory
+    X_train,y_train = rn(X_train,y_train)
+    X_test,y_test = rn(X_test,y_test)
+    return X_train,y_train,X_test,y_test,country_to_number
 
-    if i%25 == 1:
-        print(f'epoch: {i:3} loss: {single_loss.item():10.8f}')
+def train_model(data,target='gas_price',CTY = 'United States',input_size = 15,hidden_size = 120,num_layers =2,output_size = 1,learning_rate = 0.1,num_epochs = 10000,batch_size = 70,train=0):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    X_train,y_train,X_va,y_va,country_to_number = datapre(data,n_timestamp=18,target = target,time_threshold = 2011)
+    model = myLSTM(input_size, hidden_size, num_layers, output_size)
+    model = model.to(device)
+    criterion = nn.MSELoss()
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    #optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    dataset = TensorDataset(X_train, y_train)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    if train == 1:
+        for epoch in range(num_epochs):
+            for i, (batch_X, batch_y) in enumerate(dataloader):
+                batch_X = batch_X.to(device)
+                batch_y = batch_y.to(device)
+                outputs = model(batch_X)
+                loss = criterion(outputs, batch_y)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+        
+                # 打印损失
+            if (epoch+1) % 10 == 0:
+                with torch.no_grad():
+                    X_train = X_train.to(device)
+                    y_train = y_train.to(device)
+                    outputs = model(X_train)
+                    loss = criterion(outputs, y_train)
+                    print('train',loss)
+    
+                    X_va = X_va.to(device)
+                    y_va = y_va.to(device)
+                    outputs = model(X_va)
+                    #mse
+                    loss = criterion(outputs, y_va)
+                    #mae
+                    absolute_diff = torch.abs(outputs - y_va)
+                    mae = torch.mean(absolute_diff)
+                    #r2
+                    mean_targets = torch.mean(y_va)
+                    total_sum_squares = torch.sum((y_va - mean_targets) ** 2)
+                    residual_sum_squares = torch.sum((outputs - y_va) ** 2)
+                    r2 = 1 - (residual_sum_squares / total_sum_squares)
+          
+                    print(f'Epoch [{epoch+1}/{num_epochs}], mseLoss: {loss.item():.4f},maeLoss:{mae:.4f},r2:{r2:.4f}')
+                    if r2>=0.8:
+                        break
+        torch.save(model.state_dict(), './system/engines/model/Lstm/model'+target+'.pth')
+    else:
+        data = pd.read_csv("./system/dataset/data.csv")
+        columns_length = data.shape[1]
+        data.drop('id', axis=1, inplace=True)
+        # transform the country name to the int
+        int_encoded = pd.factorize(data['country'])   
+        data['country'] = int_encoded[0]
+        model.load_state_dict(torch.load('./system/engines/model/Lstm/model'+target+'.pth',map_location="cpu"))
+        number = country_to_number.get(CTY)
+        df = data[data['year'] <= 2014]
+        df = df[df['year'] >= 1997]
+        #data processing:
+        def gettingid(data,country):
+            data_id = data[data['country'] == country]
+            return data_id
+        X = []
+        def data_split(sequence, X,n_timestamp=18):
+            ix = sequence.values
+            for i in range(len(sequence)):
+                end_ix = i + n_timestamp
+                if end_ix > len(sequence):
+                    break
+                seq_x= ix[i:end_ix]
+                X.append(seq_x)
+            return X
+        d = gettingid(df,number)
+        X_test= data_split(d, X,n_timestamp=18)
+        X_test = np.array(X)
+        X_test = torch.from_numpy(X_test).float()
+        X_test = X_test.to(device)
+    #remove nan
+        mask = torch.isnan(X_test)
+        X_test = torch.where(mask, torch.zeros_like(X_test), X_test)
+        #print(X_test)
+        y_pred = model(X_test)
 
-    print(f'epoch: {i:3} loss: {single_loss.item():10.10f}')
-    print("start model training:")
-    test_inputs = train_data_normalized[-train_window:].tolist()
-    model.eval()
+        X_va = X_va.to(device)
+        y_va = y_va.to(device)
+        outputs = model(X_va)
+        #mse
+        loss = criterion(outputs, y_va)
+        #mae
+        absolute_diff = torch.abs(outputs - y_va)
+        mae = torch.mean(absolute_diff)
+        #r2
+        mean_targets = torch.mean(y_va)
+        total_sum_squares = torch.sum((y_va - mean_targets) ** 2)
+        residual_sum_squares = torch.sum((outputs - y_va) ** 2)
+        r2 = 1 - (residual_sum_squares / total_sum_squares)
     
-    model_file = 'Lstm'+'-'+city+'-'+target+'.pth' 
-    model_path = os.path.join(folder_path, model_file)
-    torch.save(model.state_dict(), model_path)
-    
-    for i in range(predicttime+1):
-        seq = torch.FloatTensor(test_inputs[-train_window:])
-        with torch.no_grad():
-            model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size),
-                            torch.zeros(1, 1, model.hidden_layer_size))
-            test_inputs.append(model(seq).item()) 
-    pre = np.array(test_inputs[tw:])
-    pre = scaler.inverse_transform(pre.reshape(-1,1))
-    return pre,model
+    return float(r2),float(loss),float(mae),y_pred
 
-def LSTM_model_test(data,learning_rate,city,target,tw=12,predicttime=12):
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    processed_train_data = scaler.fit_transform(data.reshape(-1, 1))
-    train_data_normalized = torch.FloatTensor(processed_train_data).view(-1)
-    #train_data_normalized = processed_train_data
-    #[a1 a2 a3 a4 a5]->[a6]
-    
-    train_window = tw
-    
-    model = LSTM()
-    model_file = 'Lstm'+'-'+city+'-'+target+'.pth'  # 模型文件名
-    model_path = os.path.join(folder_path, model_file)
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-
-    test_inputs = train_data_normalized[-train_window:].tolist()
-    for i in range(predicttime+1):
-        seq = torch.FloatTensor(test_inputs[-train_window:])
-        with torch.no_grad():
-            model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size),
-                             torch.zeros(1, 1, model.hidden_layer_size))
-            test_inputs.append(model(seq).item()) 
-    pre = np.array(test_inputs[tw:])
-    pre = scaler.inverse_transform(pre.reshape(-1,1))
-    return pre,model
-
-def predict(data,city,target,training = 1):
-    #Set year as index
-    source_data = data
-    source_data['year'] = pd.to_datetime(source_data['year'], format='%Y')
-    current_date = source_data['year'].values[-1]
-    print(current_date)
-    source_data = source_data.sort_values(by=['year'])
-    source_data = source_data.set_index(['year',])
-    train_data=source_data[source_data['country']==city]
-    
-    #target列设置为oil_price_2000
-    target_1=pd.DataFrame(train_data[target],index=train_data[target].index,columns=[target])
-    
-    #删去target列,cty_name和id
-    processed_train_data=processing_data(target_1).values
-    tw=[6,8,10,12]
-    predicttime=[5,8,10]
-    lr=[0.01,0.05]
-    MSE=1000000
-    combination=[0,0,0]
-    for x in tw:
-        for y in predicttime:
-            for z in lr:
-                wind=x
-                pt=y
-                lrate=z
-                print("tw:",wind)
-                print("pt:",pt)
-                print("lr:",lrate)
-                if training == 1:
-                    result_temp,model=LSTM_model_training(processed_train_data[:-pt],lrate,city,target,wind,pt)
-                    result,model=LSTM_model_test(processed_train_data[:-10],lrate,city,target,wind,10)
-                    print(len(result))
-                else:
-                    result,model=LSTM_model_test(processed_train_data[:-10],lrate,city,target,wind,10)
-                    fm = model
-                    y_pred = result
-                    print(len(result))
-                result=np.array(result)
-                print(result[:-1]-np.array(processed_train_data[-10:]))
-                MSE_r =mean_squared_error(result[:-1],np.array(processed_train_data[-10:]))
-                r2 = r2_score(result[:-1],np.array(processed_train_data[-10:]))
-                mae = mean_absolute_error(result[:-1],np.array(processed_train_data[-10:]))
-
-                #find best prediction:
-                if MSE_r < MSE:
-                    MSE = MSE_r
-                    print(MSE_r)
-                    va_pred = result
-                    combination[0] = x
-                    combination[1] = y
-                    combination[2] = z
-                    fm = model
-                    R2 = r2
-                    MAE = mae
-
-    model_file = 'Lstm'+'-'+city+'-'+target+'.pth' 
-    model_path = os.path.join(folder_path, model_file)
-    torch.save(fm.state_dict(), model_path)            
-    #vasualization:
-    x = range(0,11)
-    years = []
-    for i in x[::-1]:
-        years.append(current_date + pd.DateOffset(years=1) - pd.DateOffset(years=i))
-    
-    va_y = np.array(processed_train_data[-10:])
-    plt.plot(years,va_pred,label = 'model test')
-    #x = range(1,len(va_pred)+1)
-    plt.plot(years[:-1],va_y,label = 'real value')
-    plt.xlabel('last predicted years')
-    plt.ylabel('price')
-    plt.legend()
-    plt.title("LSTM Model")
-    plt.show()
-    return plt,va_pred,years,MSE,R2,MAE
