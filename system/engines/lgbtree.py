@@ -113,8 +113,8 @@ def plot_figure(df,target_feature,target,Years):
     print(len(y_preds))
     print(target.shape)
 
-    plt.plot(Years[1:],y_preds[:-1],label = 'y_pred')
-    plt.plot(Years[1:],target[1:],label = 'y_real')
+    plt.plot(Years[1:],y_preds[:-1],label = 'Fitted Data')
+    plt.plot(Years[1:],target[1:],label = 'Real Data')
     plt.xlabel('year')
     plt.ylabel('target value')
     plt.title("Prediction of Feature")

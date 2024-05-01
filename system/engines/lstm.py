@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.init as init
 from torch.utils.data import TensorDataset, DataLoader
+import matplotlib.pyplot as plt
 
 class myLSTM(nn.Module):
     def __init__(self,input_size, hidden_size, num_layers, output_size):
@@ -34,7 +35,9 @@ class myLSTM(nn.Module):
         out = self.fc(out[:,-1,:])  # 只取最后一个时间步的输出
         return out
 
-def datapre(data,n_timestamp=3,target = 'oil_price',time_threshold = 2011):
+def datapre(n_timestamp=3,target = 'oil_price',time_threshold = 2011):
+    #load the data
+    data = pd.read_csv('./system/dataset/data.csv')
     columns_length = data.shape[1]
     data.drop('id', axis=1, inplace=True)
     # transform the country name to the int
@@ -71,7 +74,6 @@ def datapre(data,n_timestamp=3,target = 'oil_price',time_threshold = 2011):
     print(X_train.shape)
     print(y_train.shape)
     
-#test data
     df = data[data['year'] > time_threshold-n_timestamp]
     #data processing:
     X = []
@@ -94,11 +96,12 @@ def datapre(data,n_timestamp=3,target = 'oil_price',time_threshold = 2011):
         return tensorx,tensory
     X_train,y_train = rn(X_train,y_train)
     X_test,y_test = rn(X_test,y_test)
+    
     return X_train,y_train,X_test,y_test,country_to_number
 
-def train_model(data,target='gas_price',CTY = 'United States',input_size = 15,hidden_size = 120,num_layers =2,output_size = 1,learning_rate = 0.1,num_epochs = 10000,batch_size = 70,train=0):
+def train_model(target='gas_exports',CTY = 'United States',input_size = 15,hidden_size = 120,num_layers =2,output_size = 1,learning_rate = 0.1,num_epochs = 3000,batch_size = 70,train=0):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    X_train,y_train,X_va,y_va,country_to_number = datapre(data,n_timestamp=18,target = target,time_threshold = 2011)
+    X_train,y_train,X_va,y_va,country_to_number = datapre(n_timestamp=18,target = target,time_threshold = 2011)
     model = myLSTM(input_size, hidden_size, num_layers, output_size)
     model = model.to(device)
     criterion = nn.MSELoss()
@@ -145,16 +148,20 @@ def train_model(data,target='gas_price',CTY = 'United States',input_size = 15,hi
                         break
         torch.save(model.state_dict(), './system/engines/model/Lstm/model'+target+'.pth')
     else:
-        data = pd.read_csv("./system/dataset/data.csv")
+        data = pd.read_csv('./system/dataset/data.csv')
         columns_length = data.shape[1]
         data.drop('id', axis=1, inplace=True)
         # transform the country name to the int
         int_encoded = pd.factorize(data['country'])   
         data['country'] = int_encoded[0]
-        model.load_state_dict(torch.load('./system/engines/model/Lstm/model'+target+'.pth',map_location="cpu"))
+        model.load_state_dict(torch.load('./system/engines/model/Lstm/model'+target+'.pth',map_location=torch.device('cpu')))
         number = country_to_number.get(CTY)
-        df = data[data['year'] <= 2014]
-        df = df[df['year'] >= 1997]
+
+        fig_end = 2014
+        used_back_years = 7
+        fig_start = 1997-used_back_years
+        df = data[data['year'] <= fig_end]
+        df = df[df['year'] >= fig_start]
         #data processing:
         def gettingid(data,country):
             data_id = data[data['country'] == country]
@@ -162,24 +169,35 @@ def train_model(data,target='gas_price',CTY = 'United States',input_size = 15,hi
         X = []
         def data_split(sequence, X,n_timestamp=18):
             ix = sequence.values
+            iy = sequence.loc[:,target].values[-used_back_years:]
+            print(sequence.columns)
             for i in range(len(sequence)):
                 end_ix = i + n_timestamp
                 if end_ix > len(sequence):
                     break
                 seq_x= ix[i:end_ix]
                 X.append(seq_x)
-            return X
+            return X,iy
         d = gettingid(df,number)
-        X_test= data_split(d, X,n_timestamp=18)
+        X_test,y_test= data_split(d, X,n_timestamp=18)
         X_test = np.array(X)
         X_test = torch.from_numpy(X_test).float()
         X_test = X_test.to(device)
+        
     #remove nan
         mask = torch.isnan(X_test)
         X_test = torch.where(mask, torch.zeros_like(X_test), X_test)
-        #print(X_test)
+        y_test = np.array(y_test)
+        y_test = torch.from_numpy(y_test).float()
+        y_test = y_test.to(device)
+        
+    #remove nan
+        mask = torch.isnan(y_test)
+        y_test = torch.where(mask, torch.zeros_like(y_test), y_test)
+        print(X_test)
         y_pred = model(X_test)
-
+        
+    #validation 
         X_va = X_va.to(device)
         y_va = y_va.to(device)
         outputs = model(X_va)
@@ -193,6 +211,26 @@ def train_model(data,target='gas_price',CTY = 'United States',input_size = 15,hi
         total_sum_squares = torch.sum((y_va - mean_targets) ** 2)
         residual_sum_squares = torch.sum((outputs - y_va) ** 2)
         r2 = 1 - (residual_sum_squares / total_sum_squares)
-    
-    return float(r2),float(loss),float(mae),y_pred
+    #y_test is the real data and y_pred is predicted by X_test 
+        print(y_test.shape)
+        print(y_pred.shape)
 
+    #draw figure
+        y_pred = y_pred.detach().numpy().reshape(-1)
+        y_test = y_test.detach().numpy()
+        times = range(fig_end-used_back_years+1,fig_end+2)
+
+        fig = plt.figure()
+        plt.plot(times, y_pred)
+        plt.plot(times[:-1], y_test)
+        plt.legend(['prediction','real value'])
+        plt.title(target+' of '+CTY)
+        plt.xlabel('year')
+        plt.ylabel(target+'value')
+        
+        # 显示图像
+        plt.show()
+                
+    
+    
+    return float(r2),float(loss),float(mae),y_pred[-1],fig
