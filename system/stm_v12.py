@@ -10,12 +10,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import engines.analysis as ana
-import engines.arima as ari
 import engines.xgbtree as xgbt
 import engines.lstm as lstm
 import engines.lstm_cheng as lstmc
 from engines.lstm_cheng import EMBModel,RNNModel
 import engines.lgbtree as lgb
+import joblib
 import os
 import pickle
 
@@ -275,7 +275,8 @@ elif page == 'Basic Analysis':
       st.markdown("# DATA ANLYSIS")
    st.markdown('### The "Basic Analysis" page offers a range of data analysis features.')
    st.markdown('-It includes options for outlier detection and removal, allowing users to identify and handle anomalous data points.')
-   st.markdown('-The page provides options for exploring correlations with countries or features.Users can select specific countries, time periods, and features of interest to analyze the correlation patterns.')
+   st.markdown('-The page provides options for exploring correlations with countries or features.')
+   st.markdown('-Users can select specific countries, time periods, and features of interest to analyze the correlation patterns.')
    st.markdown('-The results are visualized using bar charts or correlation matrices, enabling users to uncover relationships and trends within the dataset.')
    st.sidebar.write('Sidebar for Analysis')
    
@@ -390,11 +391,11 @@ elif page == 'Prediction':
       and opt for the most appropriate model based on the performance metrics provided.
       ''')
    elif model_option == 'LightGBM':
-      default_countries_index = countries.index('United States')
-      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       features_trained = data.columns[3:]
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
       feature_option = feature_revise_map_total[feature_option]
+      default_countries_index = countries.index('United States')
+      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       st.write('LightGBM Model Result')
       R2,MSE,MAE,res,fig = lgb.run(data,country_option,feature_option,0)
       table_dict = dict()
@@ -409,24 +410,23 @@ elif page == 'Prediction':
       st.pyplot(fig)
 
    elif model_option == 'LSTM-Single Feature':
-      features_trained = data.columns[3:]
-      default_feature_index = list(features_trained).index('oil_product')
-      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained],index = default_feature_index)
+      features_return = ['oil_price','oil_product','gas_price','gas_product']
+      default_feature_index = list(features_return).index('oil_product')
+      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_return],index = default_feature_index)
       feature_option = feature_revise_map_total[feature_option]
       path = "./system/engines/model/Lstm_cheng/"
       with open(path+feature_option+'/id_set_'+feature_option+'.pkl', 'rb') as file:
          country_id_set = pickle.load(file)
-      print("id_set:",country_id_set)
+      id_encoder = joblib.load(path+'oil_price/label_encoder_oil_price.pkl')
+      selected_ids = id_encoder.inverse_transform(np.array(country_id_set))
       country_set = []
-      for c in country_id_set:
+      for c in selected_ids:
          country_set.append(data[data['id'] == c]['country'].values[0])
-
       country_option = st.selectbox('Please select one country',country_set)
       st.write("LSTM Model Result:")
       country_id = data[data['country'] == country_option]['id'].values[0]
-      print(country_id)
       data_cheng = pd.read_csv("./system/dataset/data_Cheng.csv")
-      fig,train_metrics,test_metrics = lstmc.load_lstm(data_cheng,1980,2013)
+      fig,train_metrics,test_metrics = lstmc.load_lstm(data_cheng,1980,2013,feature_option)
       table_dict = dict()
       table = pd.DataFrame(columns= ["R2","MSE","MAE"])
       R2 = "{:.3e}".format(test_metrics[country_id][0])
@@ -436,15 +436,14 @@ elif page == 'Prediction':
       table.set_index("R2",inplace = True)
       st.dataframe(table,width = 500)
       st.pyplot(fig[country_id])
-      st.pyplot(fig)
 
    elif model_option == 'LSTM-Multi Features':
-      default_countries_index = countries.index('United States')
-      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       features_return = ['oil_exports','oil_pro_person','oil_val_person','gas_exports',
                            'gas_price','gas_product','gas_val_person','population']
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_return])
       feature_option = feature_revise_map_total[feature_option]
+      default_countries_index = countries.index('United States')
+      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       R2,MSE,MAE,res,fig = lstm.train_model(target=feature_option,CTY = country_option)
       table_dict = dict()
       table = pd.DataFrame(columns= ["R2","MSE","MAE","Prediction for 2015"])
@@ -458,11 +457,11 @@ elif page == 'Prediction':
       st.pyplot(fig)
 
    elif model_option == 'XGBoost':
-      default_countries_index = countries.index('United States')
-      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       features_trained = data.columns[3:]
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
       feature_option = feature_revise_map_total[feature_option]
+      default_countries_index = countries.index('United States')
+      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       st.write("XGBoost Model Result:")
       R2,MSE,MAE,res,fig = xgbt.run(data,country_option,feature_option,train = 0)
       table_dict = dict()
@@ -476,3 +475,5 @@ elif page == 'Prediction':
       st.dataframe(table,width = 500)
       st.pyplot(fig)
 
+   elif page == 'Risk Analysis':
+      

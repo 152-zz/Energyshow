@@ -231,6 +231,4 @@ def train_model(target='gas_exports',CTY = 'United States',input_size = 15,hidde
         # 显示图像
         plt.show()
                 
-    
-    
     return float(r2),float(loss),float(mae),y_pred[-1],fig

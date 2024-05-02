@@ -205,7 +205,7 @@ def load_lstm(data, start, tail,target_name=None):
     with open(path+target_name+'/MinMaxScalerLst_'+target_name+'.pkl', 'rb') as f:
         MinMaxScalerLst = pickle.load(f) #读取国家ids
 
-    id_encoder = joblib.load(path+target_name+'/label_encoder_'+target_name+'.pkl')
+    id_encoder = joblib.load(path+'oil_price/label_encoder_oil_price.pkl')
     net = torch.load(path+target_name+'/LSTM_'+target_name+'.pth')
     
     # 初始化数据
