@@ -48,7 +48,7 @@ def xgb_model_training(df,target_feature,target,traceback,years,subsample,learni
         X_train,y_train,X_validation,y_validation=train_test(target_feature,i,years,df,target) 
         
         #fit
-        xgb_reg=XGBR(subsample=subsample,learning_rate=learning_rate,max_depth=max_depth)
+        xgb_reg=XGBR(colsample_bynode = 0.95,colsample_bytree = 0.95,subsample=subsample,learning_rate=learning_rate,max_depth=max_depth,n_estimators=100)
         xgb_reg.fit(X_train,y_train)
         y_pred=xgb_reg.predict(X_validation)
         

@@ -46,15 +46,16 @@ gas_features = ['gas_product','gas_price','gas_value','gas_exports',
                 'gas_pro_person','gas_val_person']
 
 if page == 'Main Page':
-    # Logo and Navigation
-    col1, col2, col3 = st.columns((1, 4, 1))
-    with col2:
-        st.markdown("# ENERGY PLATFORM")
-    st.sidebar.write('Sidebar for Main Page')
-    st.write('Introduction for Energy Platform:')
-    st.write('---------------------------------------------------')
-    image_path = 'system/pictures/mainpage.jpeg'
-    st.image(image_path, caption='Oil & Gas', use_column_width=True)
+   # Logo and Navigation
+   col1, col2, col3 = st.columns((1, 4, 1))
+   with col2:
+      st.markdown("# ENERGY PLATFORM")
+   st.subheader('*Welcome to our interactive energy data visualization platform!*')
+   st.markdown('Here, you can explore and analyze energy data from various countries around the world. ')
+   st.markdown("Our platform provides a comprehensive overview of each country's energy value, production and export, from which you can gain valuable insights into each country's energy profile and trends. ")
+   st.markdown("Feel free to dive into our data platform and uncover the mysteries of the energy world hidden beneath vast amounts of data! ")
+   image_path = 'system/pictures/mainpage.jpeg'
+   st.image(image_path, caption='Oil & Gas', use_column_width=True)
 
 elif page == 'Reference':
    col1, col2, col3 = st.columns((1, 4, 1))
@@ -62,8 +63,11 @@ elif page == 'Reference':
       st.markdown("# Reference")
    with col3:
       st.markdown("[![GitHub](https://img.shields.io/badge/-GitHub-black?logo=github&style=flat-square)](https://github.com/msdm-ust/energyintel_data_platform)", unsafe_allow_html=True)
-   st.text("[1] Smith, John. (2022). Beginner's Guide to Streamlit with Python: Build Web-Based Data and Machine Learning Applications (1st ed.). Apress")
-
+   st.markdown("[1] Smith, John. (2022). Beginner's Guide to Streamlit with Python: Build Web-Based Data and Machine Learning Applications (1st ed.). Apress")
+   st.markdown("[2] Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. In Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (pp. 785-794). New York, NY, USA: ACM.")
+   st.markdown("[3] Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. Neural Computation, 9(8), 1735–1780. https://doi.org/10.1162/neco.1997.9.8.1735")
+   st.markdown("[4] Diebold F X, Yilmaz K. Better to give than to receive: Predictive directional measurement of volatility spillovers[J]. International Journal of forecasting, 2012, 28(1): 57-66.")
+   st.markdown("[5] Antonakakis N, Gabauer D. Refined measures of dynamic connectedness based on TVP-VAR[J]. 2017.")
 elif page == 'Dynamic World Map':
    df_new = pd.read_csv('./system/dataset//data.csv')
    data=df_new
@@ -187,14 +191,11 @@ elif page == 'Dynamic World Map':
    if page == "oil":
       features = oil_features_capital
       st.header("Dynamic Oil World Map")
-      st.text('''
-      This page presents a dynamic world map visualization based on selected indicators 
-      related to either oil or gas.The indicators are derived from a dataset on global 
-      sustainable energy.The map allows you to explore the changes in the selected 
-      indicator over time across different countries.You can use the slider to navigate 
-      through different years and observe the corresponding values on the map.The visual-
-      ization helps to visualize and understand the variations and trends in oil or gas-
-      related metrics across the world.''')
+      st.markdown('### This page presents a dynamic world map visualization based on selected indicators related to either oil or gas.')
+      st.markdown('-The indicators are derived from a dataset on global sustainable energy.')
+      st.markdown('-The map allows you to explore the changes in the selected indicator over time across different countries.')
+      st.markdown('-You can use the slider to navigate through different years and observe the corresponding values on the map.')
+      st.markdown('-The visualization helps to visualize and understand the variations and trends in oil or gas-related metrics across the world.')
       option = st.selectbox('Select the indicator to display on the map:', features)
       # 从归一化的列名中移除 '_normalized' 后缀以匹配原始列名
       option = feature_revise_map_total[option]
@@ -202,14 +203,11 @@ elif page == 'Dynamic World Map':
    else:
       features = gas_features_capital
       st.header("Dynamic Gas World Map")
-      st.text('''
-      This page presents a dynamic world map visualization based on selected indicators 
-      related to either oil or gas.The indicators are derived from a dataset on global 
-      sustainable energy.The map allows you to explore the changes in the selected 
-      indicator over time across different countries.You can use the slider to navigate 
-      through different years and observe the corresponding values on the map.The visual-
-      ization helps to visualize and understand the variations and trends in oil or gas-
-      related metrics across the world.''')
+      st.markdown('### This page presents a dynamic world map visualization based on selected indicators related to either oil or gas.')
+      st.markdown('-The indicators are derived from a dataset on global sustainable energy.')
+      st.markdown('-The map allows you to explore the changes in the selected indicator over time across different countries.')
+      st.markdown('-You can use the slider to navigate through different years and observe the corresponding values on the map.')
+      st.markdown('-The visualization helps to visualize and understand the variations and trends in oil or gas-related metrics across the world.')
       option = st.selectbox('Select the indicator to display on the map:', features)
       option = feature_revise_map_total[option]
       st.plotly_chart(plot_world_map_with_slider(df_new, option.replace('_normalized', '')), use_container_width=True)
@@ -218,13 +216,10 @@ elif page == 'Visualization':
    col1, col2, col3 = st.columns((1, 4, 1))
    with col2:
       st.markdown("# Visualization")
-   st.text('''
-   -This page presents the visualization function of the Energy Platform. 
-   -From the sidebar, users can chose the visualization part of oil data or gas data.
-   -The Parameters that can be chosen are year range,the pattern, countries, features. 
-   -By selecting the pattern, the visualization part can show the comparison between 
-    different countries on one feature or show the comparison between different 
-    features on one country''')
+   st.markdown('### This page presents the visualization function of the Energy Platform.')
+   st.markdown('-From the sidebar, users can chose the visualization part of oil data or gas data.')
+   st.markdown('-The Parameters that can be chosen are year range,the pattern, countries, features.')
+   st.markdown('-By selecting the pattern, the visualization part can show the comparison between different countries on one feature or show the comparison between different features on one country')
    st.sidebar.write('Sidebar for Visualization')
    energy_option = st.sidebar.radio('Energy Options', ['Oil', 'Gas'])
    
@@ -278,14 +273,10 @@ elif page == 'Basic Analysis':
    col1, col2, col3 = st.columns((1, 4, 1))
    with col2:
       st.markdown("# DATA ANLYSIS")
-   st.text('''
-   The "Basic Analysis" page offers a range of data analysis features. It includes 
-   options for outlier detection and removal, allowing users to identify and handle 
-   anomalous data points. The page provides options for exploring correlations with 
-   countries or features.Users can select specific countries, time periods, and 
-   features of interest to analyze the correlation patterns.The results are visualized 
-   using bar charts or correlation matrices, enabling users to uncover relationships 
-   and trends within the dataset.''')
+   st.markdown('### The "Basic Analysis" page offers a range of data analysis features.')
+   st.markdown('-It includes options for outlier detection and removal, allowing users to identify and handle anomalous data points.')
+   st.markdown('-The page provides options for exploring correlations with countries or features.Users can select specific countries, time periods, and features of interest to analyze the correlation patterns.')
+   st.markdown('-The results are visualized using bar charts or correlation matrices, enabling users to uncover relationships and trends within the dataset.')
    st.sidebar.write('Sidebar for Analysis')
    
    # 添加用于选择是否检测和剔除outliers的选项
@@ -368,8 +359,37 @@ elif page == 'Prediction':
    with col2:
       st.markdown("# Prediction")
    countries = list(data['country'].unique())
-   model_option = st.sidebar.radio('Model Options', ['LSTM-Single Feature','LSTM-Multi Features','LightGBM','XGBoost'])
-   if model_option == 'LightGBM':
+   model_option = st.sidebar.radio('Model Options', ['Introduction','LSTM-Single Feature','LSTM-Multi Features','LightGBM','XGBoost'])
+   if model_option == 'Introduction':
+      st.markdown("### Introduction of Prediction")
+      st.markdown('''The premise of establishing predictive models rests upon thorough data preprocessing. 
+      Our dataset, spanning from 1932 to 2014, encompasses various attributes related to natural gas and oil 
+      across different countries. Given the extensive time range and the influence of country-specific factors, 
+      the dataset presents challenges characterized by a wide temporal scope and a substantial number of missing 
+      values. In response, tailored approaches to data handling and enhancement have been adopted for distinct 
+      subsets and in accordance with the requirements of the applied models. ''')
+      st.markdown('This comprehensive preprocessing primarily entails three stages: ')
+      st.markdown('**_-handling missing values；_**')
+      st.markdown('**_-data enhancement；_**')
+      st.markdown('**_-feature engineering._**')
+      st.markdown('''
+      We have constructed a multitude of predictive models for various features in our dataset, 
+      categorizing them into two main classes: tree-based models represented by XGBoost, deep 
+      learning models epitomized by LSTM. Adhering to a set of predefined evaluation criteria, 
+      our objective is to sieve out the machine learning models that genuinely exhibit predictive prowess. 
+      Through an iterative process of refinement and optimization, we have ultimately retained the select 
+      few models showcased in the left column of the prediction page: ''')
+      st.markdown('**_-A multi-country forecast LSTM model for a single forecast target_**')
+      st.markdown('**_-A single-country LSTM model for a single forecast target_**')
+      st.markdown('**_-An Xgboost model built for a single, single prediction target_**')
+      st.markdown('**_-The Lightgbm model is built for a single single prediction target_**')
+      st.markdown('''Lastly, we present a comparative evaluation of the model on the test set using three metrics – R², 
+      MAE, and MSE – summarized in a tabular format for clarity. To further enhance understanding, we have illustrated 
+      the trends of these values through graphical plots, which facilitate insight into the trajectories and prospective 
+      trends of various indicators pertaining to both oil and natural gas. These visual aids empower users to discern 
+      and opt for the most appropriate model based on the performance metrics provided.
+      ''')
+   elif model_option == 'LightGBM':
       default_countries_index = countries.index('United States')
       country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
       features_trained = data.columns[3:]
@@ -389,16 +409,19 @@ elif page == 'Prediction':
       st.pyplot(fig)
 
    elif model_option == 'LSTM-Single Feature':
-      with open('./system/engines/model/Lstm_cheng/LSTM_240427/id_set.pkl', 'rb') as file:
+      features_trained = data.columns[3:]
+      default_feature_index = list(features_trained).index('oil_product')
+      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained],index = default_feature_index)
+      feature_option = feature_revise_map_total[feature_option]
+      path = "./system/engines/model/Lstm_cheng/"
+      with open(path+feature_option+'/id_set_'+feature_option+'.pkl', 'rb') as file:
          country_id_set = pickle.load(file)
+      print("id_set:",country_id_set)
       country_set = []
       for c in country_id_set:
          country_set.append(data[data['id'] == c]['country'].values[0])
-      default_countries_index = countries.index('United States')
+
       country_option = st.selectbox('Please select one country',country_set)
-      features_trained = data.columns[3:]
-      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
-      feature_option = feature_revise_map_total[feature_option]
       st.write("LSTM Model Result:")
       country_id = data[data['country'] == country_option]['id'].values[0]
       print(country_id)
