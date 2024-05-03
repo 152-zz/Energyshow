@@ -106,13 +106,13 @@ def plot_figure(df,target_feature,target,Years):
     print(target.shape)
 
     plt.plot(Years[1:],y_preds[:-1],label = 'Fitted Data')
-    plt.plot(Years[1:],target[1:],label = 'Real Data')
+    plt.plot(Years[1:],target.values[:-1],label = 'Real Data')
     plt.xlabel('year')
     plt.ylabel('target value')
     plt.title(" ")
     plt.legend()
     plt.show()
-    return plt
+    return plt,y_preds[-1]
 
 def data_process(data,target_feature,max_lack):
     #load the data
@@ -121,7 +121,7 @@ def data_process(data,target_feature,max_lack):
 
     #reserve the lines with more than length of columns minus 2
     columns_length = df.shape[1]
-    df.dropna(thresh=columns_length-max_lack, inplace=True)
+    #df.dropna(thresh=columns_length-max_lack, inplace=True)
     df.head()
     df['year'] = pd.to_datetime(df['year'],format='%Y')
     df = df.sort_values(by=['year'])
@@ -165,5 +165,5 @@ def run(data,country,target_feature = 'gas_product',train = 1):
     Years = df[df['country'] == idx]
     df.reset_index()
     Years = Years.index
-    figure = plot_figure(df[df['country'] == idx],target_feature,target[df['country'] == idx],Years)
-    return r2,mse,mae,y_test[idx],figure
+    figure,pred = plot_figure(df[df['country'] == idx],target_feature,target[df['country'] == idx],Years)
+    return r2,mse,mae,pred[0],figure
