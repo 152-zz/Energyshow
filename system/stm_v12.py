@@ -21,30 +21,39 @@ import os
 import pickle
 
 page = st.sidebar.selectbox('Choose your page', ['Main Page', 'Dynamic World Map',
-'Visualization','Basic Analysis', 'Prediction',"Risk Analysis","Reference"])
+'Visualization','Data Analysis', 'Prediction',"Risk Analysis","Reference"])
 
 current_dir = os.path.dirname(__file__)
 relative_path = os.path.join(current_dir, 'dataset/data.csv')
 data = pd.read_csv(relative_path)
 
-# A sample feature mapping
-
-feature_map_total = {v:"".join([f"{i.capitalize()} " for i in v.split("_")])[0:-1]
-               for v in [col for col in data.columns if col not in ['country', 'year',"id"]]}
-feature_revise_map_total = {v:k for k,v in feature_map_total.items()}
-feature_map_oil = {v:"".join([f"{i.capitalize()} " for i in v.split("_")])[0:-1]
-               for v in [col for col in data.columns if col in ['oil_product',
-               'oil_price','oil_value','oil_exports','oil_pro_person','oil_val_person']]}
-feature_revise_map_oil = {v:k for k,v in feature_map_oil.items()}
-feature_map_gas = {v:"".join([f"{i.capitalize()} " for i in v.split("_")])[0:-1]
-               for v in [col for col in data.columns if col in ['gas_product',
-               'gas_price','gas_value','gas_exports','gas_pro_person','gas_val_person']]}
-feature_revise_map_gas = {v:k for k,v in feature_map_gas.items()}
-
 oil_features = ['oil_product','oil_price','oil_value','oil_exports',
                 'oil_pro_person','oil_val_person']
 gas_features = ['gas_product','gas_price','gas_value','gas_exports',
                 'gas_pro_person','gas_val_person']
+
+
+feature_map_total={'oil_product': 'Oil Production',
+'oil_price': 'Oil Price',
+'oil_value': 'Oil Value',
+'oil_exports': 'Oil Exports',
+'gas_product': 'Gas Production',
+'gas_price': 'Gas Price',
+'gas_value': 'Gas Value',
+'gas_exports': 'Gas Exports',
+'population': 'Population',
+'oil_pro_person': 'Oil Production per capita',
+'gas_pro_person': 'Gas Production per capita',
+'oil_val_person': 'Oil Value per capita',
+'gas_val_person': 'Gas Value per capita'}
+
+feature_revise_map_total = {}
+for k in feature_map_total.keys():
+   r_key = feature_map_total[k]
+   feature_revise_map_total[r_key] = k
+
+#feature_map_oil = {feature_map_total[v] for v in oil_features}
+#feature_revise_map_oil = {feature_revise_map_total[v] for v in feature_map_oil}
 
 if page == 'Main Page':
    # Logo and Navigation
@@ -70,46 +79,53 @@ elif page == 'Reference':
    st.markdown("[4] Diebold F X, Yilmaz K. Better to give than to receive: Predictive directional measurement of volatility spillovers[J]. International Journal of forecasting, 2012, 28(1): 57-66.")
    st.markdown("[5] Antonakakis N, Gabauer D. Refined measures of dynamic connectedness based on TVP-VAR[J]. 2017.")
 elif page == 'Dynamic World Map':
-   df_new = pd.read_csv('./system/dataset//data.csv')
+   # Load the datasets
+   df_new = pd.read_csv('./system/dataset/data.csv')
    data=df_new
    features=[col for col in data.columns if col not in ['country', 'year',"id"]]
-   oil_features_capital = ['Oil Product','Oil Price','Oil Value','Oil Exports',
-                  'Oil Pro Person','Oil Val Person']
-   gas_features_capital = ['Gas Product','Gas Price','Gas Value','Gas Exports',
-                  'Gas Pro Person','Gas Val Person']
+
+   oil_features_capital = ['Oil Production','Oil Price','Oil Value','Oil Exports',
+                  'Oil Price per capita','Oil Production per capita']
+   gas_features_capital = ['Gas Production','Gas Price','Gas Value','Gas Exports',
+                  'Gas Price per capita','Gas Production per capita']
 
    oil_features = ['oil_product','oil_price','oil_value','oil_exports',
                   'oil_pro_person','oil_val_person']
    gas_features = ['gas_product','gas_price','gas_value','gas_exports',
                   'gas_pro_person','gas_val_person']
 
-   feature_map_total={'oil_product_normalized': 'Oil Product',
+
+   feature_map_total={'oil_product_normalized': 'Oil Production',
    'oil_price_normalized': 'Oil Price',
    'oil_value_normalized': 'Oil Value',
    'oil_exports_normalized': 'Oil Exports',
-   'gas_product_normalized': 'Gas Product',
+   'gas_product_normalized': 'Gas Production',
    'gas_price_normalized': 'Gas Price',
    'gas_value_normalized': 'Gas Value',
    'gas_exports_normalized': 'Gas Exports',
    'population_normalized': 'Population',
-   'oil_pro_person_normalized': 'Oil Pro Person',
-   'gas_pro_person_normalized': 'Gas Pro Person',
-   'oil_val_person_normalized': 'Oil Val Person',
-   'gas_val_person_normalized': 'Gas Val Person'}
+   'oil_pro_person_normalized': 'Oil Price per capita',
+   'gas_pro_person_normalized': 'Gas Price per capita',
+   'oil_val_person_normalized': 'Oil Production per capita',
+   'gas_val_person_normalized': 'Gas Production per capita'}
 
-   feature_revise_map_total={'Oil Product': 'oil_product_normalized',
+   feature_revise_map_total={'Oil Production': 'oil_product_normalized',
    'Oil Price': 'oil_price_normalized',
    'Oil Value': 'oil_value_normalized',
    'Oil Exports': 'oil_exports_normalized',
-   'Gas Product': 'gas_product_normalized',
+   'Gas Production': 'gas_product_normalized',
    'Gas Price': 'gas_price_normalized',
    'Gas Value': 'gas_value_normalized',
    'Gas Exports': 'gas_exports_normalized',
    'Population': 'population_normalized',
-   'Oil Pro Person': 'oil_pro_person_normalized',
-   'Gas Pro Person': 'gas_pro_person_normalized',
-   'Oil Val Person': 'oil_val_person_normalized',
-   'Gas Val Person': 'gas_val_person_normalized'}
+   'Oil Price per capita': 'oil_pro_person_normalized',
+   'Gas Price per capita': 'gas_pro_person_normalized',
+   'Oil Production per capita': 'oil_val_person_normalized',
+   'Gas Production per capita': 'gas_val_person_normalized'}
+
+
+
+
 
    def normalize_columns(dataframe, column_names):
       for column_name in column_names:
@@ -120,34 +136,83 @@ elif page == 'Dynamic World Map':
 
    # Normalize the new dataset
    df_new = normalize_columns(df_new, features)
+
+
+   def get_units(column_name):
+      units = {
+         'oil_product': 'Barrels',
+         'oil_price': 'USD/bbl',
+         'oil_value': 'USD',
+         'oil_exports': 'MMbbls',
+         'gas_product': 'Bcf',
+         'gas_price': 'USD/MMBtu',
+         'gas_value': 'USD',
+         'gas_exports': 'Bcm',
+         'population': 'Person',
+         'oil_pro_person': 'Barrels per person',
+         'gas_pro_person': 'Bcf per person',
+         'oil_val_person': 'USD per person',
+         'gas_val_person': 'USD per person'
+      }
+      # Default to empty string if no unit is found
+      return units.get(column_name.lower().replace(" ", "_"), '')
+
    # 动态世界地图函数
    def plot_world_map_with_slider(df, column_name):
       normalized_column = column_name + '_normalized'
       capital_column_name=feature_map_total[normalized_column]
+
+
       # 获取原始数据的最大值和最小值
       actual_min = df[column_name].min()
       actual_max = df[column_name].max()
+
       fig = go.Figure()
       for year in range(df['year'].min(), df['year'].max() + 1):
          filtered_df = df[df['year'] == year]
+         # Example usage in your trace
+         unit = get_units(column_name)
+         colorbar_title = f"{capital_column_name}\n({unit})"
+
          trace = go.Choropleth(
                locations=filtered_df['country'],
-               z=filtered_df[normalized_column],  # This is the normalized data for the choropleth color scale
-               text=filtered_df[column_name],  # Add this line to show the actual values on hover
+               z=filtered_df[normalized_column],
+               text=filtered_df[column_name],
                locationmode='country names',
                colorscale='Viridis',
-               hoverinfo='location+text', 
+               hoverinfo='location+text',
                colorbar=dict(
-                  title=capital_column_name,
-                  tickvals=[0, 0.25, 0.5, 0.75, 1],  # 归一化的刻度值
-                  ticktext=[f'{int(actual_min)}', f'{int((actual_max - actual_min) * 0.25 + actual_min)}',
-                           f'{int((actual_max - actual_min) * 0.5 + actual_min)}',
-                           f'{int((actual_max - actual_min) * 0.75 + actual_min)}', f'{int(actual_max)}']
+                  title=colorbar_title,  # Remove this title
+                  tickvals=[0, 0.25, 0.5, 0.75, 1],
+                  ticktext=[
+                     f'{int(actual_min):.1e}',
+                     f'{int((actual_max - actual_min) * 0.25 + actual_min):.1e}',
+                     f'{int((actual_max - actual_min) * 0.5 + actual_min):.1e}',
+                     f'{int((actual_max - actual_min) * 0.75 + actual_min):.1e}',
+                     f'{int(actual_max):.1e}'
+                  ]
                ),
                zmin=0,
                zmax=1,
                visible=False
          )
+
+         layout = go.Layout(
+               annotations=[
+                  dict(
+                     x=1.02,  # Adjust this value to position the text right next to the color bar
+                     y=1,  # Top of the color bar
+                     xref='paper',
+                     yref='paper',
+                     text=f'{capital_column_name}<br>({unit})',  # Use <br> for a new line in annotations
+                     showarrow=False,
+                     align='left'
+                  )
+               ]
+         )
+
+
+
          fig.add_trace(trace)
       
       fig.data[0].visible = True
@@ -186,17 +251,11 @@ elif page == 'Dynamic World Map':
       return fig
 
    # Streamlit 页面选择
-   st.sidebar.title("Choose Dataset")
-   page = st.sidebar.selectbox("Choose Page:", ["oil", "gas"])
+   page = st.sidebar.selectbox("Energy Options:", ["Oil", "Gas"])
 
-   if page == "oil":
+   if page == "Oil":
       features = oil_features_capital
       st.header("Dynamic Oil World Map")
-      st.markdown('### This page presents a dynamic world map visualization based on selected indicators related to either oil or gas.')
-      st.markdown('-The indicators are derived from a dataset on global sustainable energy.')
-      st.markdown('-The map allows you to explore the changes in the selected indicator over time across different countries.')
-      st.markdown('-You can use the slider to navigate through different years and observe the corresponding values on the map.')
-      st.markdown('-The visualization helps to visualize and understand the variations and trends in oil or gas-related metrics across the world.')
       option = st.selectbox('Select the indicator to display on the map:', features)
       # 从归一化的列名中移除 '_normalized' 后缀以匹配原始列名
       option = feature_revise_map_total[option]
@@ -204,11 +263,6 @@ elif page == 'Dynamic World Map':
    else:
       features = gas_features_capital
       st.header("Dynamic Gas World Map")
-      st.markdown('### This page presents a dynamic world map visualization based on selected indicators related to either oil or gas.')
-      st.markdown('-The indicators are derived from a dataset on global sustainable energy.')
-      st.markdown('-The map allows you to explore the changes in the selected indicator over time across different countries.')
-      st.markdown('-You can use the slider to navigate through different years and observe the corresponding values on the map.')
-      st.markdown('-The visualization helps to visualize and understand the variations and trends in oil or gas-related metrics across the world.')
       option = st.selectbox('Select the indicator to display on the map:', features)
       option = feature_revise_map_total[option]
       st.plotly_chart(plot_world_map_with_slider(df_new, option.replace('_normalized', '')), use_container_width=True)
@@ -221,17 +275,16 @@ elif page == 'Visualization':
    st.markdown('-From the sidebar, users can chose the visualization part of oil data or gas data.')
    st.markdown('-The Parameters that can be chosen are year range,the pattern, countries, features.')
    st.markdown('-By selecting the pattern, the visualization part can show the comparison between different countries on one feature or show the comparison between different features on one country')
-   st.sidebar.write('Sidebar for Visualization')
    energy_option = st.sidebar.radio('Energy Options', ['Oil', 'Gas'])
    
    if energy_option == 'Oil':
-      feature_map = feature_map_oil
+      feature_map = feature_map_total
       features = oil_features
-      feature_revise_map = feature_revise_map_oil
+      feature_revise_map = feature_revise_map_total
    elif energy_option == 'Gas':
-      feature_map = feature_map_gas
+      feature_map = feature_map_total
       features = gas_features
-      feature_revise_map = feature_revise_map_gas
+      feature_revise_map = feature_revise_map_total
       
    cities = data["country"].unique().tolist()
    
@@ -270,23 +323,23 @@ elif page == 'Visualization':
                st.title('Different Features of '+ city_option)   
                st.line_chart(df)
 
-elif page == 'Basic Analysis':
+elif page == 'Data Analysis':
    col1, col2, col3 = st.columns((1, 4, 1))
    with col2:
       st.markdown("# DATA ANLYSIS")
-   st.markdown('### The "Basic Analysis" page offers a range of data analysis features.')
+   st.markdown('### The "Data Analysis" page offers a range of data analysis features.')
    st.markdown('-It includes options for outlier detection and removal, allowing users to identify and handle anomalous data points.')
    st.markdown('-The page provides options for exploring correlations with countries or features.')
    st.markdown('-Users can select specific countries, time periods, and features of interest to analyze the correlation patterns.')
    st.markdown('-The results are visualized using bar charts or correlation matrices, enabling users to uncover relationships and trends within the dataset.')
-   st.sidebar.write('Sidebar for Analysis')
    
    # 添加用于选择是否检测和剔除outliers的选项
    def outlier_detect(data,city,feature):
       filtered_data = data[(data['country'] == city)]
       fig,ax = plt.subplots(figsize = (10,6))
       # 绘制箱线图
-      ax.boxplot(filtered_data[feature])
+      ax.boxplot(filtered_data[feature].dropna(how = 'all'))
+      #print(filtered_data[feature])
       ax.set_xlabel("feature")
       ax.set_ylabel("value")
       ax.set_title("Box Plot")
@@ -295,8 +348,10 @@ elif page == 'Basic Analysis':
    outlier_option = st.sidebar.radio('Outlier Options', ['Detect', 'Drop'])
    if outlier_option == 'Detect':
       st.title("Detecting outliers...")
-      cities_option = st.selectbox("Please select one or more countries", data['country'].unique())
-      features_option = st.selectbox("Choose one feature", [feature_map_total[col] for col in data.columns if col not in ['country', 'year',"id"]])
+      with open('./system/engines/dict_country_features.pickle', 'rb') as file:
+         dict_country_features = pickle.load(file)
+      cities_option = st.selectbox("Please select one or more countries",dict_country_features.keys())
+      features_option = st.selectbox("Choose one feature", [feature_map_total[col] for col in dict_country_features[cities_option]])
       fig = outlier_detect(data,cities_option,feature_revise_map_total[features_option])
       if features_option:
          st.pyplot(fig)
@@ -361,36 +416,24 @@ elif page == 'Prediction':
    with col2:
       st.markdown("# Prediction")
    countries = list(data['country'].unique())
-   model_option = st.sidebar.radio('Model Options', ['Introduction','LSTM-Single Feature','LSTM-Multi Features','LightGBM','XGBoost'])
+   model_option = st.sidebar.radio('Model Options', ['Introduction','LSTM','LightGBM','XGBoost'])
    if model_option == 'Introduction':
       st.markdown("### Introduction of Prediction")
-      st.markdown('''The premise of establishing predictive models rests upon thorough data preprocessing. 
-      Our dataset, spanning from 1932 to 2014, encompasses various attributes related to natural gas and oil 
-      across different countries. Given the extensive time range and the influence of country-specific factors, 
-      the dataset presents challenges characterized by a wide temporal scope and a substantial number of missing 
-      values. In response, tailored approaches to data handling and enhancement have been adopted for distinct 
-      subsets and in accordance with the requirements of the applied models. ''')
-      st.markdown('This comprehensive preprocessing primarily entails three stages: ')
+      st.markdown('''The foundation for establishing predictive models rests upon thorough data preprocessing. 
+      Our dataset spans from 1932 to 2014 and encompasses a variety of attributes related to natural gas and 
+      oil across different countries.This comprehensive preprocessing primarily entails three stages:  ''')
       st.markdown('**_-handling missing values；_**')
       st.markdown('**_-data enhancement；_**')
       st.markdown('**_-feature engineering._**')
       st.markdown('''
-      We have constructed a multitude of predictive models for various features in our dataset, 
-      categorizing them into two main classes: tree-based models represented by XGBoost, deep 
-      learning models epitomized by LSTM. Adhering to a set of predefined evaluation criteria, 
-      our objective is to sieve out the machine learning models that genuinely exhibit predictive prowess. 
-      Through an iterative process of refinement and optimization, we have ultimately retained the select 
-      few models showcased in the left column of the prediction page: ''')
-      st.markdown('**_-A multi-country forecast LSTM model for a single forecast target_**')
-      st.markdown('**_-A single-country LSTM model for a single forecast target_**')
-      st.markdown('**_-An Xgboost model built for a single, single prediction target_**')
+      We've built diverse predictive models for our dataset's features, grouped into two categories: 
+      tree models (e.g., XGBoost) and deep learning models (notably, LSTM):''')
+      st.markdown('**_-LSTM model based on single feature or multiple features；_**')
+      st.markdown('**_-An Xgboost model；_**')
+      st.markdown('**_-The Lightgbm model；_**')
       st.markdown('**_-The Lightgbm model is built for a single single prediction target_**')
       st.markdown('''Lastly, we present a comparative evaluation of the model on the test set using three metrics – R², 
-      MAE, and MSE – summarized in a tabular format for clarity. To further enhance understanding, we have illustrated 
-      the trends of these values through graphical plots, which facilitate insight into the trajectories and prospective 
-      trends of various indicators pertaining to both oil and natural gas. These visual aids empower users to discern 
-      and opt for the most appropriate model based on the performance metrics provided.
-      ''')
+      MAE, and MSE, and also we realize the visualization.''')
    elif model_option == 'LightGBM':
       features_trained = data.columns[3:]
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_trained])
@@ -410,7 +453,7 @@ elif page == 'Prediction':
       st.dataframe(table,width = 500)
       st.pyplot(fig)
 
-   elif model_option == 'LSTM-Single Feature':
+   elif model_option == 'LSTM':
       features_return = ['oil_price','oil_product','gas_price','gas_product']
       default_feature_index = list(features_return).index('oil_product')
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_return],index = default_feature_index)
@@ -424,9 +467,10 @@ elif page == 'Prediction':
       for c in selected_ids:
          country_set.append(data[data['id'] == c]['country'].values[0])
       country_option = st.selectbox('Please select one country',country_set)
-      st.write("LSTM Model Result:")
       country_id = data[data['country'] == country_option]['id'].values[0]
       data_cheng = pd.read_csv("./system/dataset/data_Cheng.csv")
+
+      st.write("Single-Feature LSTM Model Result:")
       fig,train_metrics,test_metrics = lstmc.load_lstm(data_cheng,1980,2013,feature_option)
       table_dict = dict()
       table = pd.DataFrame(columns= ["R2","MSE","MAE"])
@@ -438,7 +482,7 @@ elif page == 'Prediction':
       st.dataframe(table,width = 500)
       st.pyplot(fig[country_id])
 
-   elif model_option == 'LSTM-Multi Features':
+      st.write("Multi-Feature LSTM Model Result:")
       features_return = ['oil_exports','oil_pro_person','oil_val_person','gas_exports',
                            'gas_price','gas_product','gas_val_person','population']
       feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_return])
@@ -455,8 +499,9 @@ elif page == 'Prediction':
       table.loc[0] = [R2,MSE,MAE,PRE]
       table.set_index("R2",inplace = True)
       st.dataframe(table,width = 500)
-      st.pyplot(fig)
+      #st.pyplot(fig)
 
+      
    elif model_option == 'XGBoost':
       features_trained =  ['oil_price','oil_pro_person','oil_val_person','oil_value','oil_product',
       'gas_value','gas_price','gas_product','gas_pro_person','gas_val_person']
@@ -748,9 +793,10 @@ elif page == 'Risk Analysis':
    if analysis_option == 'Introduction':
       st.markdown('### I. Basic Concepts')
       st.markdown(''' 
-            Connectedness refers to the degree of association or interaction between different financial variables. 
-            In connectedness analysis, we quantify the strength of the link between variables by assessing their correlations, 
-            transmission effects or other statistical measures.
+            Connectedness refers to the association or interaction between financial variables, quantified through 
+            correlations and statistical measures. 
+            Volatility spillover is the transmission of risk or volatility from one market to another, 
+            indicating the degree of correlation and transmission effects.
       ''')
       st.markdown('''
             Volatility spillover refers to how volatility or risk in financial markets is transmitted from one market to another.
@@ -761,34 +807,25 @@ elif page == 'Risk Analysis':
       ''')
       st.markdown('### II. A brief history')
       st.markdown('''
-            The development of the connectivity approach can be traced back to the studies of Diebold and Yılmaz in 2009, 
-            2012 and 2014. They proposed a connectivity measure based on rolling window vector autoregressive (VAR) models, 
-            i.e., based on forecast error variance decomposition. This method measures the interdependence among variables
-             by estimating the forecast error variance decomposition of the VAR model. Subsequently, researchers have 
-             extended and improved this approach by proposing more connectivity measures and models, such as the time-varying parameter-based VAR model (TVP-VAR).
+            The connectivity approach originated from Diebold and Yılmaz's studies in 2009, 2012, and 2014.
+            They introduced a measure based on forecast error variance decomposition using rolling window vector 
+            autoregressive (VAR) models. This method assesses interdependence among variables. Further advancements 
+            include the time-varying parameter-based VAR model (TVP-VAR).
       ''')
       st.markdown('### III. Analytical Ideas')
       st.markdown('''
-            In conducting the volatility spillover analysis of risk, we analyze from two perspectives: 
-            international and individual country.
+            Volatility spillover analysis focuses on international and individual country perspectives. 
+            The international perspective involves establishing risk systems for G7 stock markets and the 
+            international oil market, as well as natural gas markets of six major economies. The individual 
+            country perspective creates a U.S. risk system comprising the U.S. stock market, oil market, 
+            natural gas market, and coal market. Various measures, such as total spillover benefit, net 
+            spillover benefit, pairwise spillover benefit, and network analysis, help evaluate risk in 
+            the energy market for investment decision-making.
       ''')
+      st.markdown('### IV. Bibliography')
       st.markdown('''
-            From an international perspective, two risk systems are established. The first risk system 
-            is the G7 stock market risk system and the international oil market risk system, using daily 
-            data of G7 stock market closing prices and WTI crude oil futures prices from 2006/1/5 to 2021/11/1. 
-            The second risk system is the natural gas markets of the six major economies, using daily data on 
-            the natural gas futures prices of the six countries from 2015/10/9 - 2024/3/5.
-      ''')
-      st.markdown('''
-            A U.S. risk system was created from a single country perspective, consisting of the U.S. stock market, 
-            oil market, natural gas market, and coal market, using daily data on U.S. stock closing prices, 
-            oil futures prices, natural gas futures prices, and coal futures prices from 2015/10/9 - 2024/3/5.
-      ''')
-      st.markdown('''
-            For each risk system, the total spillover benefit, net spillover benefit, and pairwise spillover 
-            benefit of the system are analyzed separately, as well as the network analysis of the risk spillover 
-            relationship between each object in the risk system, which can help investors to objectively evaluate 
-            the risk status of the energy market when making decisions.
+            Diebold F X, Yilmaz K. Better to give than to receive: Predictive directional measurement of volatility spillovers[J]. 
+            International Journal of forecasting, 2012, 28(1): 57-66.
       ''')
    if analysis_option == 'Global':
       energies = ['Oil', "Gas"]
