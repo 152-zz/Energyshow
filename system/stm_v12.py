@@ -236,7 +236,7 @@ elif page == 'Dynamic World Map':
       fig.update_layout(
          title_text=f'{capital_column_name} Map with slider',
          title_font_size=24,
-         title_x=0.5,
+         title_x=0.2,
          geo=dict(
                showframe=True,
                showcoastlines=True,
@@ -407,7 +407,7 @@ elif page == 'Data Analysis':
                features_option = st.multiselect("Choose one or more features", [col for col in data.columns if col not in ['country', 'year','id']])
 
 
-         fig = ana.corr_features(data,features_option,start_year,end_year)
+         fig, = ana.corr_features(data,features_option,start_year,end_year)
          if features_option:
                st.pyplot(fig)
 
@@ -470,7 +470,7 @@ elif page == 'Prediction':
       country_id = data[data['country'] == country_option]['id'].values[0]
       data_cheng = pd.read_csv("./system/dataset/data_Cheng.csv")
 
-      st.write("Single-Feature LSTM Model Result:")
+      st.write("LSTM Model Result:")
       fig,train_metrics,test_metrics = lstmc.load_lstm(data_cheng,1980,2013,feature_option)
       table_dict = dict()
       table = pd.DataFrame(columns= ["R2","MSE","MAE"])
@@ -481,25 +481,6 @@ elif page == 'Prediction':
       table.set_index("R2",inplace = True)
       st.dataframe(table,width = 500)
       st.pyplot(fig[country_id])
-
-      st.write("Multi-Feature LSTM Model Result:")
-      features_return = ['oil_exports','oil_pro_person','oil_val_person','gas_exports',
-                           'gas_price','gas_product','gas_val_person','population']
-      feature_option = st.selectbox('Please select one feature',[feature_map_total[col] for col in features_return])
-      feature_option = feature_revise_map_total[feature_option]
-      default_countries_index = countries.index('United States')
-      country_option = st.selectbox('Please select one country',countries,index = default_countries_index)
-      R2,MSE,MAE,res,fig = lstm.train_model(target=feature_option,CTY = country_option)
-      table_dict = dict()
-      table = pd.DataFrame(columns= ["R2","MSE","MAE","Prediction for 2015"])
-      R2 = "{:.3e}".format(R2)
-      MSE = "{:.3e}".format(MSE)
-      MAE = "{:.3e}".format(MAE)
-      PRE = "{:.3e}".format(float(res))
-      table.loc[0] = [R2,MSE,MAE,PRE]
-      table.set_index("R2",inplace = True)
-      st.dataframe(table,width = 500)
-      #st.pyplot(fig)
 
       
    elif model_option == 'XGBoost':

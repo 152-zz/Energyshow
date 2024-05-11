@@ -71,10 +71,9 @@ def corr_cities(data, cities, feature_names,start,tail):
 def corr_features(data, feature_names,start, tail):
 
     data_time = data[(start<=data['year']) & (data['year']<=tail)]
-    #fig,ax = plt.subplots(figsize = (10,6))
+    fig,ax = plt.subplots(figsize = (10,6))
     
     matrix = np.array(data_time[feature_names].corr())
-    '''
     im = ax.imshow(matrix, cmap='hot', interpolation='nearest')
     fig.colorbar(im,ax=ax) 
     # 标出矩阵的值
@@ -89,13 +88,13 @@ def corr_features(data, feature_names,start, tail):
     ax.set_xticks(range(matrix.shape[1]), [str(feature_names[i]) for i in range(matrix.shape[1])])
     ax.set_yticks(range(matrix.shape[0]), [str(feature_names[i]) for i in range(matrix.shape[0])])
     ax.set_title('correlation matrix')
-    '''
-    return {'x':matrix},
+    return fig,
+    #return {'x':matrix},fig
 
 
 if __name__ == "__main__":
     # Read data
-    data = pd.read_csv('../dataset/data.csv')
+    data = pd.read_csv('./system/dataset/data.csv')
     data.head()
     #fig = season(data, 'Afghanistan', 'oil_price',1978,2014)
     #plt.show()
