@@ -307,12 +307,12 @@ elif page == 'Visualization':
                      np.array([line['y'] for line in lines]).T,
                      columns = cities_option,
                      index = lines[0]['x'] )
-               st.title(feature_map[feature_option]+ ' of Different Countries')   
+               st.subheader(feature_map[feature_option]+ ' of Different Countries')   
                st.line_chart(df)
                
       elif pattern_option == 'Mutiple features in one country':
          city_option = st.selectbox('Please select one country',cities)
-         features_option = st.multiselect('Please select one or more features',[feature_map[col] for col in data.columns if col in features])
+         features_option = st.multiselect('Please select one or more features',[feature_map[col] for col in data.columns if col in oil_features+gas_features])
          feature_option = [feature_revise_map[feature] for feature in features_option]
          lines, = ana.corr_features_cities(data,city_option,feature_option,int(start_year),int(end_year))
          if features_option:
@@ -320,7 +320,7 @@ elif page == 'Visualization':
                      np.array([line['y'] for line in lines]).T,
                      columns = features_option,
                      index = lines[0]['x'] )
-               st.title('Different Features of '+ city_option)   
+               st.subheader('Different Features of '+ city_option)   
                st.line_chart(df)
 
 elif page == 'Data Analysis':
@@ -340,14 +340,14 @@ elif page == 'Data Analysis':
       # 绘制箱线图
       ax.boxplot(filtered_data[feature].dropna(how = 'all'))
       #print(filtered_data[feature])
-      ax.set_xlabel("feature")
-      ax.set_ylabel("value")
+      ax.set_xlabel("Feature")
+      ax.set_ylabel("Value")
       ax.set_title("Box Plot")
       return fig
 
-   outlier_option = st.sidebar.radio('Outlier Options', ['Detect', 'Drop'])
+   outlier_option = st.sidebar.radio('Detect and Drop Outlier', ['Detect', 'Analysis'])
    if outlier_option == 'Detect':
-      st.title("Detecting outliers...")
+      st.title("Detect outliers")
       with open('./system/engines/dict_country_features.pickle', 'rb') as file:
          dict_country_features = pickle.load(file)
       cities_option = st.selectbox("Please select one or more countries",dict_country_features.keys())
@@ -357,7 +357,7 @@ elif page == 'Data Analysis':
          st.pyplot(fig)
 
    # 这里添加检测outliers的代码
-   elif outlier_option == 'Drop':
+   elif outlier_option == 'Analysis':
       data = data.bfill()
       st.write('Outliers have been dropped...')
       # 这里添加剔除outliers的代码
@@ -389,7 +389,7 @@ elif page == 'Data Analysis':
                         np.array([bar['y'] for bar in bars]).T,
                         columns = [bar['label'] for bar in bars],
                         index = graph_params["set_xticks"][1])
-               st.title('correlation with cities')   
+               st.title('Correlation with cities')   
                st.bar_chart(df)
                
       elif pattern_option == 'Correlation with features':
