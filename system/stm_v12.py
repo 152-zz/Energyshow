@@ -285,6 +285,7 @@ elif page == 'Dynamic World Map':
       option = feature_revise_map_total[option]
       st.plotly_chart(plot_world_map_with_slider(df_new, option.replace('_normalized', '')), use_container_width=True)
 
+
 elif page == 'Visualization':
    col1, col2, col3 = st.columns((1, 4, 1))
    with col2:
@@ -364,9 +365,9 @@ elif page == 'Data Analysis':
       ax.set_title("Box Plot")
       return fig
 
-   outlier_option = st.sidebar.radio('Detect and Drop Outlier', ['Detect', 'Analysis'])
-   if outlier_option == 'Detect':
-      st.title("Detect outliers")
+   outlier_option = st.sidebar.radio('Analysis Pattern Option', ['Detect and Drop Outlier', 'Analysis'])
+   if outlier_option == 'Detect and Drop Outlier':
+      st.title("Detect and Drop Outlier")
       with open('./system/engines/dict_country_features.pickle', 'rb') as file:
          dict_country_features = pickle.load(file)
       cities_option = st.selectbox("Please select one or more countries",dict_country_features.keys())
@@ -403,7 +404,7 @@ elif page == 'Data Analysis':
 
          # 如果用户已经做出选择，则显示图表
          if cities_option and feature_option:
-               bars,graph_params = ana.corr_cities(data, cities_option, [feature_revise_map_total[feature] for feature in feature_option], start_year, end_year)
+               bars,graph_params = ana.corr_cities(data, cities_option, [feature_revise_map_total[feature] for feature in feature_option], start_year, end_year,feature_map_total)
                df = pd.DataFrame(
                         np.array([bar['y'] for bar in bars]).T,
                         columns = [bar['label'] for bar in bars],
@@ -413,7 +414,6 @@ elif page == 'Data Analysis':
                
       elif pattern_option == 'Correlation with features':
          st.title("Correlation with features")
-
          # 确保年份选择逻辑正确
          min_year, max_year = int(data['year'].min()), int(data['year'].max())
          start_year = st.slider("Choose start year", min_year, max_year, min_year)
@@ -423,10 +423,10 @@ elif page == 'Data Analysis':
          if end_year < start_year:
                st.error("The end year must later than the start year!")
          else:
-               features_option = st.multiselect("Choose one or more features", [col for col in data.columns if col not in ['country', 'year','id']])
+               features_option = st.multiselect("Choose one or more features", [feature_map_total[col] for col in data.columns if col not in ['country', 'year','id']])
 
 
-         fig, = ana.corr_features(data,features_option,start_year,end_year)
+         fig, = ana.corr_features(data,[feature_revise_map_total[feature] for feature in features_option],start_year,end_year,feature_map_total)
          if features_option:
                st.pyplot(fig)
 

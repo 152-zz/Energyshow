@@ -40,7 +40,7 @@ def corr_features_cities(data, city, feature_names, start,tail):
     return lines,
 
 # 不同城市平均指标的对比(问题：不同国家不同指标的绝对值差别较大)
-def corr_cities(data, cities, feature_names,start,tail):
+def corr_cities(data, cities, feature_names,start,tail,feature_map_total):
     num_cities,num_features = len(cities), len(feature_names)
     data_time = data[((start<=data['year']) & (data['year']<=tail))]
     data_time = data_time[['country'] + feature_names]
@@ -57,7 +57,7 @@ def corr_cities(data, cities, feature_names,start,tail):
     for i in range(num_features):
         bars.append({'x':np.array([j+i*bar_width for j in x]),
                      'y':np.array(data_group[feature_names[i]].values),
-                    'label':feature_names[i],'align' : 'center','width':bar_width})
+                    'label':feature_map_total[feature_names[i]],'align' : 'center','width':bar_width})
         #ax.bar([j+i*bar_width for j in x],data_group[feature_names[i]].values,align='center',label=feature_names[i],width=bar_width)
     graph_params = {'set_xticks':([j + num_features*bar_width/2 for j in x],cities),'bar_width':bar_width}
     
@@ -68,7 +68,7 @@ def corr_cities(data, cities, feature_names,start,tail):
     #ax.legend(loc='upper left')        
     return bars,graph_params
 # 看石油和天然气之间的关系(相关系数热力图)
-def corr_features(data, feature_names,start, tail):
+def corr_features(data, feature_names,start, tail,feature_map_total):
 
     data_time = data[(start<=data['year']) & (data['year']<=tail)]
     fig,ax = plt.subplots(figsize = (10,6))
@@ -85,9 +85,9 @@ def corr_features(data, feature_names,start, tail):
     ax.set_xticks(np.arange(-.5, matrix.shape[1], 1), minor=True)
     ax.set_yticks(np.arange(-.5, matrix.shape[0], 1), minor=True)
     plt.grid(which='minor', color='black', linestyle='-', linewidth=2)
-    ax.set_xticks(range(matrix.shape[1]), [str(feature_names[i]) for i in range(matrix.shape[1])])
-    ax.set_yticks(range(matrix.shape[0]), [str(feature_names[i]) for i in range(matrix.shape[0])])
-    ax.set_title('correlation matrix')
+    ax.set_xticks(range(matrix.shape[1]), [str(feature_map_total[feature_names[i]]) for i in range(matrix.shape[1])])
+    ax.set_yticks(range(matrix.shape[0]), [str(feature_map_total[feature_names[i]]) for i in range(matrix.shape[0])])
+    ax.set_title('Correlation Matrix')
     return fig,
     #return {'x':matrix},fig
 
