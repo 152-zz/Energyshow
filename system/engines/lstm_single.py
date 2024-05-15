@@ -159,8 +159,8 @@ def plot_result(year,yhat,x,ind,countries = ['Unknown'],input_size = 1):
         axes.axvline(x=year[ind], color='r', linestyle='--') #画辅助线
         # 在x轴顶部对应比例位置添加文本
         text_y_position = plt.gca().get_ylim()[1]  # 文本所在y轴位置
-        axes.text((year[0]+year[ind])//2, text_y_position-1.315, 'Train set', ha='center',color="red",fontsize=14)
-        axes.text((year[-1]+year[ind])//2+0.05, text_y_position-1.32, 'Test set', ha='center',color="red",fontsize=14)
+        #axes.text((year[0]+year[ind])//2, text_y_position-1.315, 'Train set', ha='center',color="red",fontsize=14)
+        #axes.text((year[-1]+year[ind])//2+0.05, text_y_position-1.32, 'Test set', ha='center',color="red",fontsize=14)
     return fig
 
 

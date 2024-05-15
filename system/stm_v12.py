@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import engines.analysis as ana
 import engines.xgbtree as xgbt
 import engines.lstm as lstm
-import engines.lstm_cheng as lstmc
-from engines.lstm_cheng import EMBModel,RNNModel
+import engines.lstm_single as lstmc
+from engines.lstm_single import EMBModel,RNNModel
 import engines.lgbtree as lgb
 from streamlit_agraph import agraph, Node, Edge, Config
 import joblib
@@ -32,6 +32,24 @@ oil_features = ['oil_product','oil_price','oil_value','oil_exports',
 gas_features = ['gas_product','gas_price','gas_value','gas_exports',
                 'gas_pro_person','gas_val_person']
 
+def get_units(column_name):
+   units = {
+      'oil_product': 'Barrels',
+      'oil_price': 'USD/bbl',
+      'oil_value': 'USD',
+      'oil_exports': 'MMbbls',
+      'gas_product': 'Bcf',
+      'gas_price': 'USD/MMBtu',
+      'gas_value': 'USD',
+      'gas_exports': 'Bcm',
+      'population': 'Person',
+      'oil_pro_person': 'Barrels per person',
+      'gas_pro_person': 'Bcf per person',
+      'oil_val_person': 'USD per person',
+      'gas_val_person': 'USD per person'
+   }
+   # Default to empty string if no unit is found
+   return units.get(column_name.lower().replace(" ", "_"), '')
 
 feature_map_total={'oil_product': 'Oil Production',
 'oil_price': 'Oil Price',
@@ -251,7 +269,7 @@ elif page == 'Dynamic World Map':
       return fig
 
    # Streamlit 页面选择
-   page = st.sidebar.selectbox("Energy Options:", ["Oil", "Gas"])
+   page = st.sidebar.radio("Commodity Options:", ["Oil", "Gas"])
 
    if page == "Oil":
       features = oil_features_capital
@@ -271,11 +289,12 @@ elif page == 'Visualization':
    col1, col2, col3 = st.columns((1, 4, 1))
    with col2:
       st.markdown("# Visualization")
+   st.markdown("## Rapid iteration Example")
    st.markdown('### This page presents the visualization function of the Energy Platform.')
    st.markdown('-From the sidebar, users can chose the visualization part of oil data or gas data.')
    st.markdown('-The Parameters that can be chosen are year range,the pattern, countries, features.')
    st.markdown('-By selecting the pattern, the visualization part can show the comparison between different countries on one feature or show the comparison between different features on one country')
-   energy_option = st.sidebar.radio('Energy Options', ['Oil', 'Gas'])
+   energy_option = st.sidebar.radio('Commodity Options', ['Oil', 'Gas'])
    
    if energy_option == 'Oil':
       feature_map = feature_map_total
@@ -307,7 +326,7 @@ elif page == 'Visualization':
                      np.array([line['y'] for line in lines]).T,
                      columns = cities_option,
                      index = lines[0]['x'] )
-               st.subheader(feature_map[feature_option]+ ' of Different Countries')   
+               st.subheader(feature_map[feature_option] + "(" +get_units(feature_option)+")" + ' of Different Countries')   
                st.line_chart(df)
                
       elif pattern_option == 'Mutiple features in one country':
