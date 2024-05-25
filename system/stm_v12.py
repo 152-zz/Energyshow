@@ -307,7 +307,8 @@ elif page == 'Visualization':
       feature_revise_map = feature_revise_map_total
       
    cities = data["country"].unique().tolist()
-   
+   print(len(cities))
+
    min_year, max_year = int(data['year'].min()), int(data['year'].max())
    start_year = st.slider("Choose start year", min_year, max_year, min_year)
    end_year = st.slider("Choose end year", min_year, max_year, max_year)
@@ -501,7 +502,6 @@ elif page == 'Prediction':
       st.dataframe(table,width = 500)
       st.pyplot(fig[country_id])
 
-      
    elif model_option == 'XGBoost':
       features_trained =  ['oil_price','oil_pro_person','oil_val_person','oil_value','oil_product',
       'gas_value','gas_price','gas_product','gas_pro_person','gas_val_person']
